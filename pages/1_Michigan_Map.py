@@ -41,7 +41,7 @@ geojson = load_geojson()
 # Extract Michigan counties only
 mi_features = [
     f for f in geojson["features"]
-    if f["properties"]["STATE"] == "26"
+    if f["id"].startswith("26")
 ]
 
 # Build full county index
