@@ -50,8 +50,14 @@ fips_to_state = {
 # =====================================================
 # ROUTE
 # =====================================================
+import os
+
 @app.route("/")
 def index():
+    print("FILES:", os.listdir())
+    print("TEMPLATES:", os.listdir("templates") if os.path.exists("templates") else "NO TEMPLATES")
+
+    return render_template("index.html")
 
     # -------------------------
     # AGGREGATE (SAFE VERSION)
