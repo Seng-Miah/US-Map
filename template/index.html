@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>US Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .map-box {
+            border: 2px solid black;
+            background-color: lightgrey;
+            margin-bottom: 30px;
+        }
+
+        .table-box {
+            border: 2px solid black;
+            background-color: #E6F2FF;
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: center;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #b3d9ff;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>US Graduates Distribution</h2>
+
+<div class="map-box">
+    {{ us_map|safe }}
+</div>
+
+<h2>State Distribution Table</h2>
+
+<div class="table-box">
+    {{ state_table|safe }}
+</div>
+
+</body>
+</html>
