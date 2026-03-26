@@ -7,24 +7,35 @@ Original file is located at
     https://colab.research.google.com/drive/1epo1jzhRlNfqMRq3zfO0s7KV06jcNme3
 """
 
-from flask import Flask, render_template
+
+   
+
+
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-app = Flask(__name__, template_folder="templates")
+st.set_page_config(layout="wide")
 
 # =====================================================
 # LOAD DATA
 # =====================================================
-df = pd.read_csv("gvsudegree_clean.csv", low_memory=False)
+@st.cache_data
+def load_data():
+    df = pd.read_csv("gvsudegree_clean.csv", low_memory=False)
+    df['Graduated'] = pd.to_numeric(df['Graduated'], errors='coerce').fillna(0)
 
-df['Graduated'] = pd.to_numeric(df['Graduated'], errors='coerce').fillna(0)
+    df['stfip'] = (
+        pd.to_numeric(df['stfip'], errors='coerce')
+        .fillna(0)
+        .astype(int)
+        .astype(str)
+        .str.zfill(2)
+    )
 
-# Clean FIPS
-df['stfip'] = (
-    pd.to_numeric(df['stfip'], errors='coerce')
-    .fillna(0).astype(int).astype(str).str.zfill(2)
-)
+    return df
+
+df = load_data()
 
 # =====================================================
 # STATE NAME MAPPING
@@ -42,83 +53,67 @@ fips_to_state = {
     "40":"Oklahoma","41":"Oregon","42":"Pennsylvania","44":"Rhode Island",
     "45":"South Carolina","46":"South Dakota","47":"Tennessee","48":"Texas",
     "49":"Utah","50":"Vermont","51":"Virginia","53":"Washington",
-    "54":"West Virginia","55":"Wisconsin","56":"Wyoming",
-    "60":"American Samoa","66":"Guam","69":"Northern Mariana Islands",
-    "72":"Puerto Rico","78":"Virgin Islands (US)"
+    "54":"West Virginia","55":"Wisconsin","56":"Wyoming"
 }
 
 # =====================================================
-# ROUTE
+# AGGREGATE
 # =====================================================
-import os
+state_df = df.groupby('stfip', as_index=False)['Graduated'].sum()
+state_df['State'] = state_df['stfip'].map(fips_to_state)
 
-@app.route("/")
-def index():
-    print("FILES:", os.listdir())
-    print("TEMPLATES:", os.listdir("templates") if os.path.exists("templates") else "NO TEMPLATES")
+total = state_df['Graduated'].sum()
+state_df['Share of Total'] = (state_df['Graduated']/total*100).round(2)
 
-    return render_template("index.html")
+# =====================================================
+# FILTER VALID STATES
+# =====================================================
+valid_states = [
+    "01","02","04","05","06","08","09","10","11","12","13","15","16","17","18",
+    "19","20","21","22","23","24","25","26","27","28","29","30","31","32","33",
+    "34","35","36","37","38","39","40","41","42","44","45","46","47","48","49",
+    "50","51","53","54","55","56"
+]
 
-    # -------------------------
-    # AGGREGATE (SAFE VERSION)
-    # -------------------------
-    state_df = df.groupby('stfip', as_index=False)['Graduated'].sum()
+us_states = state_df[state_df['stfip'].isin(valid_states)]
 
-    state_df['State'] = state_df['stfip'].map(fips_to_state)
+# =====================================================
+# UI
+# =====================================================
+st.markdown("<h2 style='text-align:center;'>US Graduates Distribution</h2>", unsafe_allow_html=True)
 
-    total = state_df['Graduated'].sum()
-    state_df['Share of Total'] = (state_df['Graduated'] / total * 100).round(2)
+# =====================================================
+# MAP
+# =====================================================
+fig = px.choropleth(
+    us_states,
+    locations='stfip',
+    locationmode='USA-states',
+    color='Graduated',
+    scope='usa',
+    color_continuous_scale='viridis'
+)
 
-    state_df = state_df.rename(columns={'stfip':'StateFip'})
+fig.update_traces(
+    customdata=us_states[['State']],
+    hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
+)
 
-    # -------------------------
-    # FILTER VALID STATES (REMOVE 00 + TERRITORIES FOR MAP)
-    # -------------------------
-    us_states = state_df[state_df['StateFip'].isin([
-        "01","02","04","05","06","08","09","10","11","12","13","15","16","17","18",
-        "19","20","21","22","23","24","25","26","27","28","29","30","31","32","33",
-        "34","35","36","37","38","39","40","41","42","44","45","46","47","48","49",
-        "50","51","53","54","55","56"
-    ])]
+fig.update_layout(
+    paper_bgcolor='lightgrey',
+    plot_bgcolor='lightgrey',
+    height=700
+)
 
-    # -------------------------
-    # MAP (US STATES)
-    # -------------------------
-    fig = px.choropleth(
-        us_states,
-        locations='StateFip',
-        locationmode='USA-states',
-        color='Graduated',
-        scope='usa',
-        color_continuous_scale='viridis'
-    )
+st.plotly_chart(fig, use_container_width=True)
 
-    fig.update_traces(
-        customdata=us_states[['State']],
-        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
-    )
+# =====================================================
+# TABLE
+# =====================================================
+st.markdown("<h3 style='text-align:center;'>State Distribution Table</h3>", unsafe_allow_html=True)
 
-    fig.update_layout(
-        title="US Graduates Distribution",
-        height=700,
-        paper_bgcolor='lightgrey',
-        plot_bgcolor='lightgrey'
-    )
+table = state_df[['stfip','State','Graduated','Share of Total']]
+table = table.rename(columns={'stfip':'StateFip'})
+table = table.sort_values('Graduated', ascending=False)
 
-    us_map = fig.to_html(full_html=False, include_plotlyjs='cdn')
-
-    # -------------------------
-    # TABLE
-    # -------------------------
-    state_table = state_df[['StateFip','State','Graduated','Share of Total']]
-    state_table = state_table.sort_values('Graduated', ascending=False)
-
-    return render_template(
-        "index.html",
-        us_map=us_map,
-        state_table=state_table.to_html(classes="table table-striped", index=False)
-    )
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+st.dataframe(table, use_container_width=True)
