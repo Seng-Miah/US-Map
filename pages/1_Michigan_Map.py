@@ -31,10 +31,13 @@ df = load_data()
 # =====================================================
 # LOAD COUNTY GEOJSON (WITH NAMES)
 # =====================================================
+import requests
+
 @st.cache_data
 def load_geojson():
     url = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
-    return json.loads(pd.read_json(url).to_json())
+    response = requests.get(url)
+    return response.json()
 
 geojson = load_geojson()
 
