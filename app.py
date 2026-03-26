@@ -87,7 +87,7 @@ st.markdown("<h2 style='text-align:center;'>US Graduates Distribution</h2>", uns
 # =====================================================
 fig = px.choropleth(
     us_states,
-    locations='stfip',
+    locations='state',
     locationmode='USA-states',
     color='Graduated',
     scope='usa',
