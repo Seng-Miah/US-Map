@@ -59,7 +59,7 @@ fips_to_state = {
 # =====================================================
 # AGGREGATE
 # =====================================================
-state_df = df.groupby('state','stfip', as_index=False)['Graduated'].sum()
+state_df = df.groupby('stfip', as_index=False)['Graduated'].sum()
 state_df['State'] = state_df['stfip'].map(fips_to_state)
 
 total = state_df['Graduated'].sum()
@@ -87,7 +87,7 @@ st.markdown("<h2 style='text-align:center;'>US Graduates Distribution</h2>", uns
 # =====================================================
 fig = px.choropleth(
     us_states,
-    locations='state',
+    locations='stfip',
     locationmode='USA-states',
     color='Graduated',
     scope='usa',
