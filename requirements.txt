@@ -1,1 +1,3 @@
-flaskpandasplotlygunicorn
+streamlit
+pandas
+plotly
