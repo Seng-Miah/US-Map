@@ -59,7 +59,7 @@ fips_to_state = {
 # =====================================================
 # AGGREGATE
 # =====================================================
-state_df = df.groupby('stfip', as_index=False)['Graduated'].sum()
+state_df = df.groupby('state','stfip', as_index=False)['Graduated'].sum()
 state_df['State'] = state_df['stfip'].map(fips_to_state)
 
 total = state_df['Graduated'].sum()
