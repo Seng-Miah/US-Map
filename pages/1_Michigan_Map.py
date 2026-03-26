@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import json
 
 st.set_page_config(layout="wide")
 
@@ -28,12 +29,34 @@ def load_data():
 df = load_data()
 
 # =====================================================
-# FILTER MICHIGAN
+# LOAD COUNTY GEOJSON (WITH NAMES)
+# =====================================================
+@st.cache_data
+def load_geojson():
+    url = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
+    return json.loads(pd.read_json(url).to_json())
+
+geojson = load_geojson()
+
+# Extract Michigan counties only
+mi_features = [
+    f for f in geojson["features"]
+    if f["properties"]["STATE"] == "26"
+]
+
+# Build full county index
+county_index = pd.DataFrame({
+    "fips": [f["id"] for f in mi_features],
+    "County": [f["properties"]["NAME"] for f in mi_features]
+})
+
+# =====================================================
+# FILTER MICHIGAN DATA
 # =====================================================
 mi_df = df[df['stfip'] == '26']
 
 # =====================================================
-# DROPDOWN (MAJOR)
+# DROPDOWN
 # =====================================================
 majors = ['All'] + sorted(mi_df['Major'].dropna().unique())
 selected_major = st.selectbox("Select Major", majors)
@@ -49,6 +72,17 @@ else:
 county_df = dff.groupby('fips', as_index=False)['Graduated'].sum()
 
 # =====================================================
+# 🔥 ALIGN WITH FULL COUNTY LIST
+# =====================================================
+aligned = county_index.merge(
+    county_df,
+    on='fips',
+    how='left'
+)
+
+aligned['Graduated'] = aligned['Graduated'].fillna(0)
+
+# =====================================================
 # UI
 # =====================================================
 st.markdown("<h2 style='text-align:center;'>Michigan County Distribution</h2>", unsafe_allow_html=True)
@@ -57,12 +91,16 @@ st.markdown("<h2 style='text-align:center;'>Michigan County Distribution</h2>", 
 # MAP
 # =====================================================
 fig = px.choropleth(
-    county_df,
-    geojson="https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json",
+    aligned,
+    geojson={"type": "FeatureCollection", "features": mi_features},
     locations='fips',
     color='Graduated',
     color_continuous_scale='Blues',
-    scope='usa'
+)
+
+fig.update_traces(
+    customdata=aligned[['County']],
+    hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
 )
 
 fig.update_geos(fitbounds="locations", visible=False)
@@ -74,3 +112,4 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
