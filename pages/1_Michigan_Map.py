@@ -49,7 +49,7 @@ mi_features = [
 
 county_index = pd.DataFrame({
     "fips": [f["id"] for f in mi_features],
-    "County": [f["properties"]["name"] for f in mi_features]
+    "County": [f["properties"]["NAME"] for f in mi_features]
 })
 
 # Build full county index
