@@ -114,7 +114,6 @@ st.markdown("""
 
 /* Table box */
 .table-box {
-    background-color: #1c589c;
     padding: 10px;
     border-radius: 10px;
 }
@@ -158,7 +157,7 @@ section = st.sidebar.radio(
 # =====================================================
 st.markdown("""
 <div class="header">
-    <h1>Grand valley STATE UNIVERSITY</h1>
+    <h1>GRAND VALLEY STATE UNIVERSITY</h1>
     <p>Distribution of graduates across the United States and Michigan</p>
 </div>
 """, unsafe_allow_html=True)
