@@ -224,21 +224,21 @@ if section == "National Distribution":
 
     if not out_us.empty:
 
-    value = int(out_us['Graduated'].values[0])
-
-    fig.add_scattergeo(
-        lon=[-65],   # 👉 slightly more right
-        lat=[27],    # 👉 slightly higher (better alignment)
-        text=[f"Out of US<br>{value:,}"],
-        mode='markers+text',
-        marker=dict(
-            size=max(20, value**0.5 * 1.5),
-            color='red',
-            opacity=0.85
-        ),
-        textposition="top center",
-        showlegend=False
-    )
+        value = int(out_us['Graduated'].values[0])
+    
+        fig.add_scattergeo(
+            lon=[-65],   # 👉 slightly more right
+            lat=[27],    # 👉 slightly higher (better alignment)
+            text=[f"Out of US<br>{value:,}"],
+            mode='markers+text',
+            marker=dict(
+                size=max(20, value**0.5 * 1.5),
+                color='red',
+                opacity=0.85
+            ),
+            textposition="top center",
+            showlegend=False
+        )
 
     fig.update_layout(
         paper_bgcolor='lightgrey',
