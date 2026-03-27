@@ -200,6 +200,33 @@ if section == "National Distribution":
     st.dataframe(table.sort_values('Graduated', ascending=False), use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # =====================================================
+    # STATE TABLE
+    # =====================================================
+    st.markdown('<div class="section-title">State Distribution</div>', unsafe_allow_html=True)
+    
+    state_table = state_df.copy()
+    
+    # Share of total
+    total = state_table['Graduated'].sum()
+    state_table['Share of Total'] = (state_table['Graduated'] / total * 100).round(2)
+    
+    # Rename + order
+    state_table = state_table.rename(columns={
+        'stfip': 'StateFip'
+    })
+    
+    state_table = state_table[['StateFip', 'state', 'Graduated', 'Share of Total']]
+    
+    # Sort
+    state_table = state_table.sort_values('Graduated', ascending=False)
+    
+    # Format
+    state_table['Graduated'] = state_table['Graduated'].astype(int)
+    
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(state_table, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 # =====================================================
 # MICHIGAN SECTION
 # =====================================================
@@ -273,4 +300,59 @@ if section == "Michigan Distribution":
     st.markdown('<div class="table-box">', unsafe_allow_html=True)
     st.dataframe(table, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+    # =====================================================
+    # COUNTY TABLE (SYNCED)
+    # =====================================================
+    st.markdown('<div class="section-title">County Distribution</div>', unsafe_allow_html=True)
     
+    table = aligned.copy()
+    
+    # Share
+    total = table['Graduated'].sum()
+    
+    if total > 0:
+        table['Share of Total'] = (table['Graduated'] / total * 100).round(2)
+    else:
+        table['Share of Total'] = 0
+    
+    # Rename
+    table = table.rename(columns={
+        'fips': 'CountyFips',
+        'County': 'County Name'
+    })
+    
+    table = table[['CountyFips', 'County Name', 'Graduated', 'Share of Total']]
+    
+    # Sort
+    table = table.sort_values('Graduated', ascending=False).reset_index(drop=True)
+    
+    # Convert
+    table['Graduated'] = table['Graduated'].astype(int)
+    
+    # =====================================================
+    # PAGINATION
+    # =====================================================
+    rows_per_page = 10
+    total_rows = len(table)
+    total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
+    
+    page = st.number_input(
+        "Page",
+        min_value=1,
+        max_value=total_pages,
+        value=1,
+        step=1
+    )
+    
+    start = (page - 1) * rows_per_page
+    end = start + rows_per_page
+    
+    page_data = table.iloc[start:end]
+    
+    # =====================================================
+    # DISPLAY
+    # =====================================================
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(page_data, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+        
