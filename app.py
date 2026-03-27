@@ -364,7 +364,7 @@ if section == "State Level Tables":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
-# COUNTY LEVEL TABLE
+# COUNTY LEVEL TABLE (FINAL CLEAN VERSION)
 # =====================================================
 if section == "County Level Tables":
 
@@ -372,55 +372,53 @@ if section == "County Level Tables":
 
     import requests
 
-    # Load county geojson
-    geojson = requests.get(
-        "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
-    ).json()
-    
-    # Build county lookup (same as map)
-    county_lookup = pd.DataFrame({
-        "CountyFips": [f["id"] for f in geojson["features"]],
-        "County Name": [f["properties"]["NAME"] for f in geojson["features"]]
-    })
-    
-    # Filter to selected state
-    county_lookup = county_lookup[county_lookup["CountyFips"].str.startswith(stfip_val)]
-
     # -------------------------
-    # LOAD COUNTY SHAPEFILE
-    # -------------------------
-    counties = gpd.read_file(
-        "https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_county_20m.zip"
-    )
-
-    counties['GEOID'] = (
-        counties['STATEFP'] + counties['COUNTYFP']
-    ).astype(str)
-
-    # -------------------------
-    # STATE NAME MAP
+    # STATE DROPDOWN
     # -------------------------
     state_names = df[['stfip']].drop_duplicates()
     state_names['State'] = state_names['stfip'].map(fips_to_state)
 
     state_options = sorted(state_names['State'].dropna().unique())
 
-    # -------------------------
-    # DROPDOWNS
-    # -------------------------
-    selected_state = st.selectbox("Select State", state_options, index=state_options.index("Michigan"))
+    selected_state = st.selectbox(
+        "Select State",
+        state_options,
+        index=state_options.index("Michigan")
+    )
 
+    # -------------------------
+    # MAJOR DROPDOWN
+    # -------------------------
     majors = ['All'] + sorted(df['Major'].dropna().unique())
     selected_major = st.selectbox("Select Major", majors)
 
     # -------------------------
-    # GET STFIP
+    # GET STFIP (🔥 MUST COME BEFORE FILTERING)
     # -------------------------
-    state_to_fips = {v:k for k,v in fips_to_state.items()}
+    state_to_fips = {v: k for k, v in fips_to_state.items()}
     stfip_val = state_to_fips.get(selected_state)
 
     # -------------------------
-    # FILTER
+    # LOAD COUNTY GEOJSON (LIGHTWEIGHT)
+    # -------------------------
+    geojson = requests.get(
+        "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
+    ).json()
+
+    county_lookup = pd.DataFrame({
+        "CountyFips": [f["id"] for f in geojson["features"]],
+        "County Name": [f["properties"]["NAME"] for f in geojson["features"]]
+    })
+
+    # -------------------------
+    # FILTER COUNTY LIST TO STATE
+    # -------------------------
+    county_lookup = county_lookup[
+        county_lookup["CountyFips"].str.startswith(stfip_val)
+    ]
+
+    # -------------------------
+    # FILTER DATA
     # -------------------------
     if selected_major == 'All':
         dff = df.copy()
@@ -434,38 +432,46 @@ if section == "County Level Tables":
     # -------------------------
     county_df = dff.groupby('fips', as_index=False)['Graduated'].sum()
 
-    total = county_df['Graduated'].sum()
-    county_df['Share of Total'] = (county_df['Graduated'] / total * 100).round(2)
+    # 🔥 ENSURE SAME COLUMN NAME FOR MERGE
+    county_df = county_df.rename(columns={'fips': 'CountyFips'})
 
     # -------------------------
-    # MERGE COUNTY NAMES
+    # MERGE WITH FULL COUNTY LIST (KEY FIX)
     # -------------------------
-    state_counties = counties[counties['STATEFP'] == stfip_val]
-
-    county_df = county_df.merge(
-        state_counties[['GEOID','NAME']],
-        left_on='fips',
-        right_on='GEOID',
+    table = county_lookup.merge(
+        county_df,
+        on='CountyFips',
         how='left'
     )
 
-    county_df['County Name'] = county_df['NAME']
+    table['Graduated'] = table['Graduated'].fillna(0)
 
-    county_df = county_df[
-        ['fips', 'County Name', 'Graduated', 'Share of Total']
-    ]
+    # -------------------------
+    # SHARE OF TOTAL
+    # -------------------------
+    total = table['Graduated'].sum()
 
-    county_df = county_df.rename(columns={'fips': 'CountyFips'})
+    if total > 0:
+        table['Share of Total'] = (
+            table['Graduated'] / total * 100
+        ).round(2)
+    else:
+        table['Share of Total'] = 0
 
-    county_df = county_df.sort_values('Graduated', ascending=False)
+    # -------------------------
+    # FORMAT
+    # -------------------------
+    table = table[['CountyFips', 'County Name', 'Graduated', 'Share of Total']]
 
-    county_df['Graduated'] = county_df['Graduated'].astype(int)
+    table = table.sort_values('Graduated', ascending=False).reset_index(drop=True)
+
+    table['Graduated'] = table['Graduated'].astype(int)
 
     # =====================================================
     # PAGINATION
     # =====================================================
     rows_per_page = 10
-    total_rows = len(county_df)
+    total_rows = len(table)
     total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
 
     page = st.number_input("Page", 1, total_pages, 1)
@@ -473,7 +479,7 @@ if section == "County Level Tables":
     start = (page - 1) * rows_per_page
     end = start + rows_per_page
 
-    page_data = county_df.iloc[start:end]
+    page_data = table.iloc[start:end]
 
     # -------------------------
     # DISPLAY
@@ -481,4 +487,7 @@ if section == "County Level Tables":
     st.markdown('<div class="table-box">', unsafe_allow_html=True)
     st.dataframe(page_data, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+   
         
