@@ -13,7 +13,6 @@ Original file is located at
 
 import streamlit as st
 import pandas as pd
-import geopandas as gpd
 import plotly.express as px
 import requests
 
@@ -371,7 +370,21 @@ if section == "County Level Tables":
 
     st.markdown('<div class="section-title">County-Level Table</div>', unsafe_allow_html=True)
 
-    import geopandas as gpd
+    import requests
+
+    # Load county geojson
+    geojson = requests.get(
+        "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
+    ).json()
+    
+    # Build county lookup (same as map)
+    county_lookup = pd.DataFrame({
+        "CountyFips": [f["id"] for f in geojson["features"]],
+        "County Name": [f["properties"]["NAME"] for f in geojson["features"]]
+    })
+    
+    # Filter to selected state
+    county_lookup = county_lookup[county_lookup["CountyFips"].str.startswith(stfip_val)]
 
     # -------------------------
     # LOAD COUNTY SHAPEFILE
