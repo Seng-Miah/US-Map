@@ -114,8 +114,8 @@ fig.update_traces(
 fig.update_geos(fitbounds="locations", visible=False)
 
 fig.update_layout(
-    paper_bgcolor='lightgrey',
-    plot_bgcolor='lightgrey',
+    paper_bgcolor='grey',
+    plot_bgcolor='grey',
     height=650
 )
 
