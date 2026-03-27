@@ -218,7 +218,7 @@ if section == "National Distribution":
     hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
     )
 
-    if not out_us.empty:
+if not out_us.empty:
 
     value = int(out_us['Graduated'].values[0])
 
