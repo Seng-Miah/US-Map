@@ -193,6 +193,16 @@ if section == "National Distribution":
     st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
 
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
+    state_df['State Name'] = state_df['stfip'].map(fips_to_state)
+
+    # US states only
+    us_states = state_df[
+        (state_df['stfip'] != "00") &
+        (~state_df['stfip'].isin(['60','66','69','72','78']))
+    ]
+
+    # Out of US
+    out_us = state_df[state_df['stfip'] == "00"]
 
     fig = px.choropleth(
         state_df,
@@ -203,10 +213,34 @@ if section == "National Distribution":
         color_continuous_scale='Blues'
     )
 
+    fig.update_traces(
+    customdata=us_states[['State Name']],
+    hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
+    )
+
+    if not out_us.empty:
+
+    value = int(out_us['Graduated'].values[0])
+
+    fig.add_scattergeo(
+        lon=[-66],   # 👉 right side of US map
+        lat=[25],
+        text=[f"Out of US<br>{value:,}"],
+        mode='markers+text',
+        marker=dict(
+            size=max(20, value**0.5 * 1.5),
+            color='red',
+            opacity=0.8
+        ),
+        textposition="top center",
+        showlegend=False
+    )
+
     fig.update_layout(
         paper_bgcolor='lightgrey',
         plot_bgcolor='lightgrey',
-        height=600
+        height=650,
+        margin=dict(l=0, r=0, t=30, b=0)
     )
 
     st.markdown('<div class="box">', unsafe_allow_html=True)
