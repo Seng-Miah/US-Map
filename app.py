@@ -25,7 +25,7 @@ st.markdown("""
 <style>
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #e6f2ff;
+    background-color: #1c589c;
 }
 
 /* Section Titles */
