@@ -170,6 +170,10 @@ if section == "Michigan Distribution":
         color='Graduated',
         color_continuous_scale='Blues'
     )
+    fig.update_geos(
+    fitbounds="locations",
+    visible=False
+    )
 
     fig.update_traces(
         customdata=aligned[['County']],
@@ -198,3 +202,4 @@ if section == "Michigan Distribution":
     st.markdown('<div class="table-box">', unsafe_allow_html=True)
     st.dataframe(table, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+    
