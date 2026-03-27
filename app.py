@@ -200,33 +200,7 @@ if section == "National Distribution":
     st.dataframe(table.sort_values('Graduated', ascending=False), use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # =====================================================
-    # STATE TABLE
-    # =====================================================
-    st.markdown('<div class="section-title">State Distribution</div>', unsafe_allow_html=True)
     
-    state_table = state_df.copy()
-    
-    # Share of total
-    total = state_table['Graduated'].sum()
-    state_table['Share of Total'] = (state_table['Graduated'] / total * 100).round(2)
-    
-    # Rename + order
-    state_table = state_table.rename(columns={
-        'stfip': 'StateFip'
-    })
-    
-    state_table = state_table[['StateFip', 'state', 'Graduated', 'Share of Total']]
-    
-    # Sort
-    state_table = state_table.sort_values('Graduated', ascending=False)
-    
-    # Format
-    state_table['Graduated'] = state_table['Graduated'].astype(int)
-    
-    st.markdown('<div class="table-box">', unsafe_allow_html=True)
-    st.dataframe(state_table, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 # =====================================================
 # MICHIGAN SECTION
 # =====================================================
@@ -300,58 +274,172 @@ if section == "Michigan Distribution":
     st.markdown('<div class="table-box">', unsafe_allow_html=True)
     st.dataframe(table, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    # =====================================================
-    # COUNTY TABLE (SYNCED)
-    # =====================================================
-    st.markdown('<div class="section-title">County Distribution</div>', unsafe_allow_html=True)
     
-    table = aligned.copy()
-    
-    # Share
-    total = table['Graduated'].sum()
-    
-    if total > 0:
-        table['Share of Total'] = (table['Graduated'] / total * 100).round(2)
+   
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =====================================================
+# STATE LEVEL TABLE
+# =====================================================
+if section == "State Level Tables":
+
+    st.markdown('<div class="section-title">State-Level Table</div>', unsafe_allow_html=True)
+
+    # Dropdown
+    majors = ['All'] + sorted(df['Major'].dropna().unique())
+    selected_major = st.selectbox("Select Major", majors)
+
+    # -------------------------
+    # FILTER
+    # -------------------------
+    if selected_major == 'All':
+        dff = df.copy()
     else:
-        table['Share of Total'] = 0
-    
-    # Rename
-    table = table.rename(columns={
-        'fips': 'CountyFips',
-        'County': 'County Name'
-    })
-    
-    table = table[['CountyFips', 'County Name', 'Graduated', 'Share of Total']]
-    
-    # Sort
-    table = table.sort_values('Graduated', ascending=False).reset_index(drop=True)
-    
-    # Convert
-    table['Graduated'] = table['Graduated'].astype(int)
-    
+        dff = df[df['Major'] == selected_major]
+
+    # -------------------------
+    # AGGREGATE
+    # -------------------------
+    state_table = dff.groupby('stfip', as_index=False)['Graduated'].sum()
+
+    # -------------------------
+    # MAP STATE NAMES
+    # -------------------------
+    state_table['State Name'] = state_table['stfip'].map(fips_to_state)
+
+    # -------------------------
+    # SHARE
+    # -------------------------
+    total = state_table['Graduated'].sum()
+
+    if total > 0:
+        state_table['Share of Total'] = (
+            state_table['Graduated'] / total * 100
+        ).round(2)
+    else:
+        state_table['Share of Total'] = 0
+
+    # -------------------------
+    # FORMAT
+    # -------------------------
+    state_table = state_table.rename(columns={'stfip':'StateFip'})
+
+    state_table = state_table[
+        ['StateFip', 'State Name', 'Graduated', 'Share of Total']
+    ]
+
+    state_table = state_table.sort_values('Graduated', ascending=False)
+
+    state_table['Graduated'] = state_table['Graduated'].astype(int)
+
+    # -------------------------
+    # DISPLAY
+    # -------------------------
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(state_table, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =====================================================
+# COUNTY LEVEL TABLE
+# =====================================================
+if section == "County Level Tables":
+
+    st.markdown('<div class="section-title">County-Level Table</div>', unsafe_allow_html=True)
+
+    import geopandas as gpd
+
+    # -------------------------
+    # LOAD COUNTY SHAPEFILE
+    # -------------------------
+    counties = gpd.read_file(
+        "https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_county_20m.zip"
+    )
+
+    counties['GEOID'] = (
+        counties['STATEFP'] + counties['COUNTYFP']
+    ).astype(str)
+
+    # -------------------------
+    # STATE NAME MAP
+    # -------------------------
+    state_names = df[['stfip']].drop_duplicates()
+    state_names['State'] = state_names['stfip'].map(fips_to_state)
+
+    state_options = sorted(state_names['State'].dropna().unique())
+
+    # -------------------------
+    # DROPDOWNS
+    # -------------------------
+    selected_state = st.selectbox("Select State", state_options, index=state_options.index("Michigan"))
+
+    majors = ['All'] + sorted(df['Major'].dropna().unique())
+    selected_major = st.selectbox("Select Major", majors)
+
+    # -------------------------
+    # GET STFIP
+    # -------------------------
+    state_to_fips = {v:k for k,v in fips_to_state.items()}
+    stfip_val = state_to_fips.get(selected_state)
+
+    # -------------------------
+    # FILTER
+    # -------------------------
+    if selected_major == 'All':
+        dff = df.copy()
+    else:
+        dff = df[df['Major'] == selected_major]
+
+    dff = dff[dff['stfip'] == stfip_val]
+
+    # -------------------------
+    # AGGREGATE
+    # -------------------------
+    county_df = dff.groupby('fips', as_index=False)['Graduated'].sum()
+
+    total = county_df['Graduated'].sum()
+    county_df['Share of Total'] = (county_df['Graduated'] / total * 100).round(2)
+
+    # -------------------------
+    # MERGE COUNTY NAMES
+    # -------------------------
+    state_counties = counties[counties['STATEFP'] == stfip_val]
+
+    county_df = county_df.merge(
+        state_counties[['GEOID','NAME']],
+        left_on='fips',
+        right_on='GEOID',
+        how='left'
+    )
+
+    county_df['County Name'] = county_df['NAME']
+
+    county_df = county_df[
+        ['fips', 'County Name', 'Graduated', 'Share of Total']
+    ]
+
+    county_df = county_df.rename(columns={'fips': 'CountyFips'})
+
+    county_df = county_df.sort_values('Graduated', ascending=False)
+
+    county_df['Graduated'] = county_df['Graduated'].astype(int)
+
     # =====================================================
     # PAGINATION
     # =====================================================
     rows_per_page = 10
-    total_rows = len(table)
+    total_rows = len(county_df)
     total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
-    
-    page = st.number_input(
-        "Page",
-        min_value=1,
-        max_value=total_pages,
-        value=1,
-        step=1
-    )
-    
+
+    page = st.number_input("Page", 1, total_pages, 1)
+
     start = (page - 1) * rows_per_page
     end = start + rows_per_page
-    
-    page_data = table.iloc[start:end]
-    
-    # =====================================================
+
+    page_data = county_df.iloc[start:end]
+
+    # -------------------------
     # DISPLAY
-    # =====================================================
+    # -------------------------
     st.markdown('<div class="table-box">', unsafe_allow_html=True)
     st.dataframe(page_data, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
