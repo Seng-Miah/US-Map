@@ -24,6 +24,46 @@ st.set_page_config(layout="wide")
 st.markdown("""
 <style>
 
+/* Entire app background */
+[data-testid="stAppViewContainer"] {
+    background-color: #1c6f9c;
+}
+
+/* Main content area */
+[data-testid="stMain"] {
+    background-color: #1c6f9c;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #1c6f9c;
+}
+
+/* Text color (make readable) */
+body, .stMarkdown, .stText {
+    color: white;
+}
+
+/* Section boxes (important for contrast) */
+.box {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+/* Tables */
+.table-box {
+    background-color: #e6f2ff;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+st.markdown("""
+<style>
+
 /* Header container */
 .header {
     background-color: #1c769c;
