@@ -66,7 +66,7 @@ st.markdown("""
 
 /* Header container */
 .header {
-    padding: 12px 10px;   /* 🔽 reduced height */
+    padding: 20px 10px;   /* 🔽 reduced height */
     border-radius: 6px;
     margin-bottom: 15px;
     text-align: center;
@@ -76,7 +76,7 @@ st.markdown("""
 .header h1 {
     color: white;
     margin: 0;
-    font-size: 24px;   /* 🔽 smaller */
+    font-size: 30px;   
     font-weight: 600;
 }
 
@@ -84,7 +84,7 @@ st.markdown("""
 .header p {
     color: #e6f2ff;
     margin: 4px 0 0 0;
-    font-size: 14px;
+    font-size: 20px;
 }
 
 </style>
