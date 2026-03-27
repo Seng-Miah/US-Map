@@ -120,4 +120,65 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+# =====================================================
+# COUNTY TABLE (SYNCED WITH MAP)
+# =====================================================
+
+st.markdown("<h3 style='text-align:center;'>County Distribution Table</h3>", unsafe_allow_html=True)
+
+# -------------------------
+# PREP TABLE DATA
+# -------------------------
+table = aligned.copy()
+
+# Share of total
+total = table['Graduated'].sum()
+
+if total > 0:
+    table['Share of Total'] = (table['Graduated'] / total * 100).round(2)
+else:
+    table['Share of Total'] = 0
+
+# Rename columns
+table = table.rename(columns={
+    'fips': 'CountyFips',
+    'County': 'County Name'
+})
+
+table = table[['CountyFips', 'County Name', 'Graduated', 'Share of Total']]
+
+# Sort
+table = table.sort_values('Graduated', ascending=False).reset_index(drop=True)
+
+# -------------------------
+# PAGINATION SETTINGS
+# -------------------------
+rows_per_page = 10
+total_rows = len(table)
+total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
+
+# Page selector
+page = st.number_input(
+    "Page",
+    min_value=1,
+    max_value=total_pages,
+    value=1,
+    step=1
+)
+
+# -------------------------
+# SLICE DATA
+# -------------------------
+start = (page - 1) * rows_per_page
+end = start + rows_per_page
+
+page_data = table.iloc[start:end]
+
+# -------------------------
+# DISPLAY TABLE
+# -------------------------
+st.dataframe(
+    page_data,
+    use_container_width=True
+)
 
