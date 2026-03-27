@@ -204,37 +204,41 @@ if section == "National Distribution":
     # Out of US
     out_us = state_df[state_df['stfip'] == "00"]
 
+    # =====================================================
+    # MAP (FIXED)
+    # =====================================================
     fig = px.choropleth(
-        state_df,
+        us_states,   # ✅ ONLY real US states
         locations='state',
         locationmode='USA-states',
         color='Graduated',
         scope='usa',
         color_continuous_scale='Blues'
     )
-
+    
+    # ✅ FULL STATE NAMES (MATCH DATA EXACTLY)
     fig.update_traces(
-    customdata=us_states[['State Name']],
-    hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
+        customdata=us_states[['State Name']],
+        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
     )
 
     if not out_us.empty:
 
-        value = int(out_us['Graduated'].values[0])
-    
-        fig.add_scattergeo(
-            lon=[-66],   # 👉 right side of US map
-            lat=[25],
-            text=[f"Out of US<br>{value:,}"],
-            mode='markers+text',
-            marker=dict(
-                size=max(20, value**0.5 * 1.5),
-                color='red',
-                opacity=0.8
-            ),
-            textposition="top center",
-            showlegend=False
-        )
+    value = int(out_us['Graduated'].values[0])
+
+    fig.add_scattergeo(
+        lon=[-65],   # 👉 slightly more right
+        lat=[27],    # 👉 slightly higher (better alignment)
+        text=[f"Out of US<br>{value:,}"],
+        mode='markers+text',
+        marker=dict(
+            size=max(20, value**0.5 * 1.5),
+            color='red',
+            opacity=0.85
+        ),
+        textposition="top center",
+        showlegend=False
+    )
 
     fig.update_layout(
         paper_bgcolor='lightgrey',
