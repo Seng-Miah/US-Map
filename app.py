@@ -66,7 +66,6 @@ st.markdown("""
 
 /* Header container */
 .header {
-    background-color: #1c769c;
     padding: 12px 10px;   /* 🔽 reduced height */
     border-radius: 6px;
     margin-bottom: 15px;
