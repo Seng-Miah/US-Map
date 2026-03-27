@@ -23,6 +23,35 @@ st.set_page_config(layout="wide")
 # =====================================================
 st.markdown("""
 <style>
+
+/* Header container */
+.header {
+    background-color: #1c769c;
+    padding: 12px 10px;   /* 🔽 reduced height */
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Main title */
+.header h1 {
+    color: white;
+    margin: 0;
+    font-size: 24px;   /* 🔽 smaller */
+    font-weight: 600;
+}
+
+/* Subheading */
+.header p {
+    color: #e6f2ff;
+    margin: 4px 0 0 0;
+    font-size: 14px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+st.markdown("""
+<style>
 /* Sidebar */
 [data-testid="stSidebar"] {
     background-color: #1c589c;
@@ -82,13 +111,18 @@ st.sidebar.title("Table of Contents")
 
 section = st.sidebar.radio(
     "",
-    ["National Distribution", "Michigan Distribution"]
+    ["National Distribution", "Michigan Distribution","State Level Tables", "County Level Tables"]
 )
 
 # =====================================================
 # HEADER
 # =====================================================
-st.title("GVSU Alumni Distribution Dashboard")
+st.markdown("""
+<div class="header">
+    <h1>Grand valley STATE UNIVERSITY</h1>
+    <p>Distribution of graduates across the United States and Michigan</p>
+</div>
+""", unsafe_allow_html=True)
 
 # =====================================================
 # NATIONAL SECTION
