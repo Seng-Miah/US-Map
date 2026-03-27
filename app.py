@@ -218,23 +218,23 @@ if section == "National Distribution":
     hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
     )
 
-if not out_us.empty:
+    if not out_us.empty:
 
-    value = int(out_us['Graduated'].values[0])
-
-    fig.add_scattergeo(
-        lon=[-66],   # 👉 right side of US map
-        lat=[25],
-        text=[f"Out of US<br>{value:,}"],
-        mode='markers+text',
-        marker=dict(
-            size=max(20, value**0.5 * 1.5),
-            color='red',
-            opacity=0.8
-        ),
-        textposition="top center",
-        showlegend=False
-    )
+        value = int(out_us['Graduated'].values[0])
+    
+        fig.add_scattergeo(
+            lon=[-66],   # 👉 right side of US map
+            lat=[25],
+            text=[f"Out of US<br>{value:,}"],
+            mode='markers+text',
+            marker=dict(
+                size=max(20, value**0.5 * 1.5),
+                color='red',
+                opacity=0.8
+            ),
+            textposition="top center",
+            showlegend=False
+        )
 
     fig.update_layout(
         paper_bgcolor='lightgrey',
