@@ -46,7 +46,7 @@ st.markdown("""
 
 /* Table box */
 .table-box {
-    background-color: #f0f8ff;
+    background-color: #1c589c;
     padding: 10px;
     border-radius: 10px;
 }
@@ -105,7 +105,7 @@ if section == "National Distribution":
         locationmode='USA-states',
         color='Graduated',
         scope='usa',
-        color_continuous_scale='viridis'
+        color_continuous_scale='Blues'
     )
 
     fig.update_layout(
