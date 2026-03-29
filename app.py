@@ -418,7 +418,7 @@ if section == "State Level Tables":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
-# COUNTY LEVEL TABLE (FINAL CLEAN VERSION)
+# COUNTY LEVEL TABLE (FINAL CLEAN - NO PAGINATION)
 # =====================================================
 if section == "County Level Tables":
 
@@ -427,33 +427,37 @@ if section == "County Level Tables":
     import requests
 
     # -------------------------
-    # STATE DROPDOWN
+    # STATE OPTIONS
     # -------------------------
     state_names = df[['stfip']].drop_duplicates()
     state_names['State'] = state_names['stfip'].map(fips_to_state)
 
     state_options = sorted(state_names['State'].dropna().unique())
 
-    selected_state = st.selectbox(
-        "Select State",
-        state_options,
-        index=state_options.index("Michigan")
-    )
+    # -------------------------
+    # SIDE-BY-SIDE FILTERS
+    # -------------------------
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_state = st.selectbox(
+            "Select State",
+            state_options,
+            index=state_options.index("Michigan")
+        )
+
+    with col2:
+        majors = ['All'] + sorted(df['Major'].dropna().unique())
+        selected_major = st.selectbox("Select Major", majors)
 
     # -------------------------
-    # MAJOR DROPDOWN
-    # -------------------------
-    majors = ['All'] + sorted(df['Major'].dropna().unique())
-    selected_major = st.selectbox("Select Major", majors)
-
-    # -------------------------
-    # GET STFIP (🔥 MUST COME BEFORE FILTERING)
+    # GET STFIP
     # -------------------------
     state_to_fips = {v: k for k, v in fips_to_state.items()}
     stfip_val = state_to_fips.get(selected_state)
 
     # -------------------------
-    # LOAD COUNTY GEOJSON (LIGHTWEIGHT)
+    # LOAD COUNTY GEOJSON
     # -------------------------
     geojson = requests.get(
         "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
@@ -464,9 +468,7 @@ if section == "County Level Tables":
         "County Name": [f["properties"]["NAME"] for f in geojson["features"]]
     })
 
-    # -------------------------
-    # FILTER COUNTY LIST TO STATE
-    # -------------------------
+    # Filter to selected state
     county_lookup = county_lookup[
         county_lookup["CountyFips"].str.startswith(stfip_val)
     ]
@@ -486,11 +488,10 @@ if section == "County Level Tables":
     # -------------------------
     county_df = dff.groupby('fips', as_index=False)['Graduated'].sum()
 
-    # 🔥 ENSURE SAME COLUMN NAME FOR MERGE
     county_df = county_df.rename(columns={'fips': 'CountyFips'})
 
     # -------------------------
-    # MERGE WITH FULL COUNTY LIST (KEY FIX)
+    # MERGE (KEEP ALL COUNTIES)
     # -------------------------
     table = county_lookup.merge(
         county_df,
@@ -501,14 +502,12 @@ if section == "County Level Tables":
     table['Graduated'] = table['Graduated'].fillna(0)
 
     # -------------------------
-    # SHARE OF TOTAL
+    # SHARE
     # -------------------------
     total = table['Graduated'].sum()
 
     if total > 0:
-        table['Share of Total'] = (
-            table['Graduated'] / total * 100
-        ).round(2)
+        table['Share of Total'] = (table['Graduated'] / total * 100).round(2)
     else:
         table['Share of Total'] = 0
 
@@ -517,30 +516,16 @@ if section == "County Level Tables":
     # -------------------------
     table = table[['CountyFips', 'County Name', 'Graduated', 'Share of Total']]
 
-    table = table.sort_values('Graduated', ascending=False).reset_index(drop=True)
+    table = table.sort_values('Graduated', ascending=False)
 
     table['Graduated'] = table['Graduated'].astype(int)
 
-    # =====================================================
-    # PAGINATION
-    # =====================================================
-    rows_per_page = 50
-    total_rows = len(table)
-    total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
-
-    page = st.number_input("Page", 1, total_pages, 1)
-
-    start = (page - 1) * rows_per_page
-    end = start + rows_per_page
-
-    page_data = table.iloc[start:end]
     # -------------------------
-    # DISPLAY
+    # DISPLAY (NO PAGINATION)
     # -------------------------
     st.markdown('<div class="table-box">', unsafe_allow_html=True)
-    st.dataframe(page_data, use_container_width=True)
+    st.dataframe(table, use_container_width=True, height=600)
     st.markdown('</div>', unsafe_allow_html=True)
-
 
    
         
