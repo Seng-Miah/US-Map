@@ -521,7 +521,19 @@ if section == "County Level Tables":
 
     table['Graduated'] = table['Graduated'].astype(int)
 
+    # =====================================================
+    # PAGINATION
+    # =====================================================
+    rows_per_page = 10
+    total_rows = len(table)
+    total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
 
+    page = st.number_input("Page", 1, total_pages, 1)
+
+    start = (page - 1) * rows_per_page
+    end = start + rows_per_page
+
+    page_data = table.iloc[start:end]
     # -------------------------
     # DISPLAY
     # -------------------------
