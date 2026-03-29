@@ -207,19 +207,22 @@ if section == "National Distribution":
     # =====================================================
     # MAP (FIXED)
     # =====================================================
+    import numpy as np
+
+    us_states['log_grad'] = np.log1p(us_states['Graduated'])
+    
     fig = px.choropleth(
-        us_states,   # ✅ ONLY real US states
+        us_states,
         locations='state',
         locationmode='USA-states',
-        color='log_grad',
+        color='log_grad',   # 👈 use log values
         scope='usa',
         color_continuous_scale='Blues'
     )
     
-    # ✅ FULL STATE NAMES (MATCH DATA EXACTLY)
     fig.update_traces(
-        customdata=us_states[['State Name']],
-        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
+        customdata=us_states[['State Name','Graduated']],
+        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
     )
 
     if not out_us.empty:
