@@ -304,7 +304,7 @@ if section == "Michigan Distribution":
         aligned,
         geojson={"type":"FeatureCollection","features":mi_features},
         locations='fips',
-        color='Graduated',
+        color='log_grad',
         color_continuous_scale='Blues'
     )
     fig.update_geos(
