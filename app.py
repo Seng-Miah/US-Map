@@ -85,7 +85,7 @@ st.markdown("""
 <style>
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #1c589c;
+    background-color: #1c6f9c;
 }
 
 /* Section Titles */
