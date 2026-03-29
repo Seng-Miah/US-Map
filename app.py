@@ -44,14 +44,6 @@ body, .stMarkdown, .stText {
     color: white;
 }
 
-/* Section boxes (important for contrast) */
-.box {
-    background-color: white;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 20px;
-}
-
 /* Tables */
 .table-box {
     background-color: #e6f2ff;
