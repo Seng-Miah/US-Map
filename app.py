@@ -211,7 +211,7 @@ if section == "National Distribution":
         us_states,   # ✅ ONLY real US states
         locations='state',
         locationmode='USA-states',
-        color='Graduated',
+        color='log_grad',
         scope='usa',
         color_continuous_scale='Blues'
     )
