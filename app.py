@@ -300,27 +300,40 @@ if section == "Michigan Distribution":
     aligned = county_index.merge(county_df, on='fips', how='left')
     aligned['Graduated'] = aligned['Graduated'].fillna(0)
 
+    import numpy as np
+
+# Apply log transform
+    aligned['log_grad'] = np.log1p(aligned['Graduated'])
+    
     fig = px.choropleth(
         aligned,
-        geojson={"type":"FeatureCollection","features":mi_features},
+        geojson={"type": "FeatureCollection", "features": mi_features},
         locations='fips',
-        color='log_grad',
+        color='log_grad',   # 👈 log scale
         color_continuous_scale='Blues'
     )
-    fig.update_geos(
-    fitbounds="locations",
-    visible=False
-    )
-
+    
+    # ✅ Keep real values in hover
     fig.update_traces(
-        customdata=aligned[['County']],
-        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{z:,}<extra></extra>"
+        customdata=aligned[['County','Graduated']],
+        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
     )
-
+    
+    fig.update_geos(
+        fitbounds="locations",
+        visible=False
+    )
+    
     fig.update_layout(
         paper_bgcolor='lightgrey',
         plot_bgcolor='lightgrey',
-        height=600
+        height=650,
+        margin=dict(l=0, r=0, t=30, b=0)
+    )
+    
+    # Optional: label scale
+    fig.update_coloraxes(
+        colorbar_title="Log Scale"
     )
 
     st.markdown('<div class="box">', unsafe_allow_html=True)
