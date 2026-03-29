@@ -317,8 +317,8 @@ if section == "Michigan Distribution":
     )
     
     fig.update_layout(
-        paper_bgcolor='lightgrey',
-        plot_bgcolor='lightgrey',
+        paper_bgcolor='white',
+        plot_bgcolor='white',
         height=650,
         margin=dict(l=0, r=0, t=30, b=0)
     )
