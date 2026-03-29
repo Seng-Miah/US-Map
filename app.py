@@ -524,7 +524,7 @@ if section == "County Level Tables":
     # =====================================================
     # PAGINATION
     # =====================================================
-    rows_per_page = 10
+    rows_per_page = 50
     total_rows = len(table)
     total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
 
