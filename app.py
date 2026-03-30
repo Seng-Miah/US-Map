@@ -284,22 +284,33 @@ if section == "Michigan Distribution":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
-# STATE TABLE
+# STATE TABLE (FINAL ORDERED VERSION)
 # =====================================================
-if section=="State Tables":
 
-    majors=['All']+sorted(df['Major'].dropna().unique())
-    sel=st.selectbox("Major",majors)
+table = state_df.copy()
 
-    dff=df if sel=="All" else df[df['Major']==sel]
+# Rename columns
+table = table.rename(columns={
+    'stfip': 'StateFip',
+    'State Name': 'State'
+})
 
-    table['State']=table['stfip'].map(fips_to_state)
-    table=dff.groupby('stfip',as_index=False)['Graduated'].sum()
-    table['Share'] = (
-    table['Graduated'] / table['Graduated'].sum() * 100
-    ).round(2)
+# Select correct order
+table = table[['StateFip', 'State', 'Graduated']]
 
-    st.dataframe(table.sort_values('Graduated',ascending=False),use_container_width=True)
+# Share of total
+total = table['Graduated'].sum()
+
+table['Share of Total'] = (
+    table['Graduated'] / total * 100
+).round(2)
+
+# Sort
+table = table.sort_values('Graduated', ascending=False)
+
+# Clean formatting
+table['Graduated'] = table['Graduated'].astype(int)
+table = table.reset_index(drop=True)
 
 # =====================================================
 # COUNTY TABLE
