@@ -169,11 +169,12 @@ if section == "National Distribution":
         showlegend=False
     )
 
-    fig.update_layout(height=800)
+    fig.update_layout(dragmode=False)
 
     fig.update_geos(
         fitbounds="locations",
-        visible=False
+        visible=False,
+        projection_scale=1.2
     )
     
     # ✅ KEEP HOVER → remove staticPlot
