@@ -123,7 +123,7 @@ df = load_data()
 # SIDEBAR
 # =====================================================
 st.sidebar.title("📘 Table of Contents")
-section = st.sidebar.radio("", ["National Distribution","Michigan Distribution","State Tables","County Tables"])
+section = st.sidebar.radio("", ["National Distribution","Michigan Distribution","State Tables","County Tables", "Industry Analysis", "Employer Analysis"])
 
 # =====================================================
 # NATIONAL
@@ -378,5 +378,85 @@ if section=="County Tables":
     table['Graduated']=table['Graduated'].fillna(0)
 
     st.dataframe(table.sort_values('Graduated',ascending=False),use_container_width=True,height=600)
-   
-        
+
+    # =====================================================
+    # INDUSTRY ANALYSIS
+    # =====================================================
+   if section == "Industry Analysis":
+
+    st.markdown('<div class="section-title">Industry Analysis</div>', unsafe_allow_html=True)
+
+    df_ind = pd.read_excel("graydi_fips_mapv.xlsx", sheet_name="Company Industry")
+
+    df_ind = df_ind[~df_ind["Industries"].str.contains("Total", case=False, na=False)]
+
+    TOP_N = st.slider("Top N Industries", 5, 30, 10)
+
+    df_ind = df_ind.sort_values("Count of Company Industry", ascending=False).head(TOP_N)
+
+    total = df_ind["Count of Company Industry"].sum()
+    df_ind["Percent"] = df_ind["Count of Company Industry"] / total
+
+    col1, col2 = st.columns(2)
+
+    # BAR
+    with col1:
+        fig_bar = px.bar(
+            df_ind,
+            x="Count of Company Industry",
+            y="Industries",
+            orientation="h",
+            text="Count of Company Industry"
+        )
+        fig_bar.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # TREEMAP
+    with col2:
+        fig_tree = px.treemap(
+            df_ind,
+            path=["Industries"],
+            values="Count of Company Industry"
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
+
+    # =====================================================
+    # EMPLOYER ANALYSIS
+    # =====================================================
+    if section == "Employer Analysis":
+
+    st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
+
+    df_emp = pd.read_excel("graydi_fips_mapv.xlsx", sheet_name="Employers Total")
+
+    df_emp = df_emp[~df_emp["Employers"].str.contains("Total", case=False, na=False)]
+
+    TOP_N = st.slider("Top N Employers", 5, 30, 10)
+
+    df_emp = df_emp.sort_values("Count", ascending=False).head(TOP_N)
+
+    total = df_emp["Count"].sum()
+    df_emp["Percent"] = df_emp["Count"] / total
+
+    col1, col2 = st.columns(2)
+
+    # BAR
+    with col1:
+        fig_bar = px.bar(
+            df_emp,
+            x="Count",
+            y="Employers",
+            orientation="h",
+            text="Count"
+        )
+        fig_bar.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # TREEMAP
+    with col2:
+        fig_tree = px.treemap(
+            df_emp,
+            path=["Employers"],
+            values="Count"
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
