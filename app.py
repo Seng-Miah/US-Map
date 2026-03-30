@@ -284,34 +284,65 @@ if section == "Michigan Distribution":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
-# STATE TABLE (FINAL ORDERED VERSION)
 # =====================================================
+# STATE TABLE (FINAL FIXED VERSION)
+# =====================================================
+if section == "State Tables":
 
-table = state_df.copy()
+    st.markdown('<div class="section-title">State-Level Table</div>', unsafe_allow_html=True)
 
-# Rename columns
-table = table.rename(columns={
-    'stfip': 'StateFip',
-    'State Name': 'State'
-})
+    # -------------------------
+    # DROPDOWN
+    # -------------------------
+    majors = ['All'] + sorted(df['Major'].dropna().unique())
+    selected_major = st.selectbox("Select Major", majors)
 
-# Select correct order
-table = table[['StateFip', 'State', 'Graduated']]
+    # -------------------------
+    # FILTER
+    # -------------------------
+    if selected_major == 'All':
+        dff = df.copy()
+    else:
+        dff = df[df['Major'] == selected_major]
 
-# Share of total
-total = table['Graduated'].sum()
+    # -------------------------
+    # 🔥 REBUILD state_df HERE
+    # -------------------------
+    state_df = dff.groupby('stfip', as_index=False)['Graduated'].sum()
 
-table['Share of Total'] = (
-    table['Graduated'] / total * 100
-).round(2)
+    state_df['State'] = state_df['stfip'].map(fips_to_state)
 
-# Sort
-table = table.sort_values('Graduated', ascending=False)
+    # -------------------------
+    # FORMAT TABLE
+    # -------------------------
+    table = state_df.rename(columns={'stfip': 'StateFip'})
 
-# Clean formatting
-table['Graduated'] = table['Graduated'].astype(int)
-table = table.reset_index(drop=True)
+    table = table[['StateFip', 'State', 'Graduated']]
 
+    total = table['Graduated'].sum()
+
+    table['Share of Total'] = (
+        table['Graduated'] / total * 100
+    ).round(2)
+
+    table = table.sort_values('Graduated', ascending=False)
+
+    table['Graduated'] = table['Graduated'].astype(int)
+
+    table = table.reset_index(drop=True)
+
+    # -------------------------
+    # DISPLAY
+    # -------------------------
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.dataframe(
+        table,
+        use_container_width=True,
+        height=500
+    )
+
+    st.markdown('</div>', unsafe_allow_html=True)
 # =====================================================
 # COUNTY TABLE
 # =====================================================
