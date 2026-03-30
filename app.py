@@ -174,7 +174,7 @@ if section == "National Distribution":
     fig.update_geos(
         fitbounds="locations",
         visible=False,
-        projection_scale=1.3
+        projection_scale=2.0
     )
     
     # ✅ KEEP HOVER → remove staticPlot
