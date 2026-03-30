@@ -162,7 +162,7 @@ if section == "National Distribution":
         mode='markers+text',
         marker=dict(
             size=max(25, val**0.5 * 1.6),
-            color='red',
+            color='Blue',
             opacity=0.9
         ),
         textposition="top center",
