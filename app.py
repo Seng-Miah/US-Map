@@ -382,7 +382,7 @@ if section=="County Tables":
     # =====================================================
     # INDUSTRY ANALYSIS
     # =====================================================
-   if section == "Industry Analysis":
+if section == "Industry Analysis":
 
     st.markdown('<div class="section-title">Industry Analysis</div>', unsafe_allow_html=True)
 
@@ -423,7 +423,7 @@ if section=="County Tables":
     # =====================================================
     # EMPLOYER ANALYSIS
     # =====================================================
-    if section == "Employer Analysis":
+if section == "Employer Analysis":
 
     st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
 
