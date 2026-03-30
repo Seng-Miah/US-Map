@@ -423,40 +423,108 @@ if section == "Industry Analysis":
     # =====================================================
     # EMPLOYER ANALYSIS
     # =====================================================
+# =====================================================
+# EMPLOYER ANALYSIS (DYNAMIC INDUSTRY SWITCH)
+# =====================================================
 if section == "Employer Analysis":
 
     st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
 
-    df_emp = pd.read_excel("graydi_fips_mapv.xlsx", sheet_name="Employers Total")
+    FILE_PATH = "graydi_fips_mapv.xlsx"
 
-    df_emp = df_emp[~df_emp["Employers"].str.contains("Total", case=False, na=False)]
+    # -----------------------------
+    # LOAD ALL SHEETS
+    # -----------------------------
+    xls = pd.ExcelFile(FILE_PATH)
+    all_sheets = xls.sheet_names
 
-    TOP_N = st.slider("Top N Employers", 5, 30, 10)
+    # -----------------------------
+    # EXCLUDE NON-INDUSTRY SHEETS
+    # -----------------------------
+    exclude = [
+        "Data", "Company Industry", "Employers Total", "Occupations",
+        "Dynamic Table", "SCO-112021 Marketing Managers",
+        "SOC-112022 Sales Managers"
+    ]
 
-    df_emp = df_emp.sort_values("Count", ascending=False).head(TOP_N)
+    industry_sheets = [s for s in all_sheets if s not in exclude]
 
-    total = df_emp["Count"].sum()
-    df_emp["Percent"] = df_emp["Count"] / total
+    # -----------------------------
+    # DROPDOWN (🔥 KEY FEATURE)
+    # -----------------------------
+    selected_industry = st.selectbox("Select Industry", industry_sheets)
 
+    TOP_N = st.number_input(
+    "Top N Employers",
+    min_value=1,
+    max_value=100,
+    value=10,
+    step=1
+    )
+
+    # -----------------------------
+    # LOAD SELECTED INDUSTRY SHEET
+    # -----------------------------
+    df_ind = pd.read_excel(FILE_PATH, sheet_name=selected_industry)
+
+    # -----------------------------
+    # AUTO-DETECT COLUMNS
+    # -----------------------------
+    cols = df_ind.columns.tolist()
+    name_col = cols[0]
+
+    value_col = None
+    for c in cols:
+        if df_ind[c].dtype != 'object':
+            value_col = c
+            break
+
+    df_ind = df_ind[[name_col, value_col]].dropna()
+
+    # Remove totals
+    df_ind = df_ind[~df_ind[name_col].str.contains("Total", case=False, na=False)]
+
+    # Sort + Top N
+    df_ind = df_ind.sort_values(value_col, ascending=False).head(TOP_N)
+
+    # Percent
+    total = df_ind[value_col].sum()
+    df_ind["Percent"] = df_ind[value_col] / total
+
+    # -----------------------------
+    # CHARTS
+    # -----------------------------
     col1, col2 = st.columns(2)
 
-    # BAR
+    # BAR CHART
     with col1:
         fig_bar = px.bar(
-            df_emp,
-            x="Count",
-            y="Employers",
+            df_ind,
+            x=value_col,
+            y=name_col,
             orientation="h",
-            text="Count"
+            text=value_col
         )
+
         fig_bar.update_yaxes(autorange="reversed")
+
         st.plotly_chart(fig_bar, use_container_width=True)
 
     # TREEMAP
     with col2:
         fig_tree = px.treemap(
-            df_emp,
-            path=["Employers"],
-            values="Count"
+            df_ind,
+            path=[name_col],
+            values=value_col,
+            color="Percent",
+            color_continuous_scale="Blues"
         )
+
         st.plotly_chart(fig_tree, use_container_width=True)
+
+    # -----------------------------
+    # TABLE
+    # -----------------------------
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(df_ind, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
