@@ -293,8 +293,8 @@ if section=="State Tables":
 
     dff=df if sel=="All" else df[df['Major']==sel]
 
-    table=dff.groupby('stfip',as_index=False)['Graduated'].sum()
     table['State']=table['stfip'].map(fips_to_state)
+    table=dff.groupby('stfip',as_index=False)['Graduated'].sum()
     table['Share'] = (
     table['Graduated'] / table['Graduated'].sum() * 100
     ).round(2)
