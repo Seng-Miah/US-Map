@@ -295,6 +295,9 @@ if section=="State Tables":
 
     table=dff.groupby('stfip',as_index=False)['Graduated'].sum()
     table['State']=table['stfip'].map(fips_to_state)
+    table['Share'] = (
+    table['Graduated'] / table['Graduated'].sum() * 100
+    ).round(2)
 
     st.dataframe(table.sort_values('Graduated',ascending=False),use_container_width=True)
 
