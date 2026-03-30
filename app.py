@@ -20,29 +20,55 @@ st.set_page_config(layout="wide")
 # =====================================================
 st.markdown("""
 <style>
-[data-testid="stAppViewContainer"] { background-color: #1c6f9c; }
-[data-testid="stSidebar"] { background-color: #174f73; padding: 20px 10px; }
-[data-testid="stSidebar"] * { color: white !important; }
 
-.block-container { padding: 10px 40px; }
+/* Background */
+[data-testid="stAppViewContainer"] {
+    background-color: #1c6f9c;
+}
 
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #174f73;
+    padding: 20px 10px;
+}
+[data-testid="stSidebar"] * {
+    color: white !important;
+}
+
+/* Layout spacing */
+.block-container {
+    padding: 10px 40px;
+}
+
+/* Header */
 .header {
     padding: 6px 0;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.3);
 }
 .header h1 { color: white; font-size: 24px; margin: 0; }
 .header p { color: #d6ecf5; font-size: 13px; margin: 2px 0; }
 
+/* Section titles */
 .section-title {
     text-align: center;
     font-size: 18px;
     font-weight: 600;
-    margin: 8px 0;
+    margin: 10px 0;
     color: white;
 }
 
+/* 🔥 CARD STYLE (NEW) */
+.card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0px 3px 8px rgba(0,0,0,0.2);
+}
+
+/* Tables */
 .table-box {
     background-color: #f5fbff;
     border-radius: 6px;
@@ -130,20 +156,47 @@ if section == "National Distribution":
     if not out_us.empty:
         val = int(out_us['Graduated'].values[0])
         fig.add_scattergeo(
-            lon=[-66], lat=[23],
-            text=[f"Out of US<br>{val:,}"],
-            mode='markers+text',
-            marker=dict(size=max(25,val**0.5*1.5),color='red'),
-            showlegend=False
-        )
+        lon=[-66],
+        lat=[22],   # lower = bottom right
+        text=[f"Out of US<br>{val:,}"],
+        mode='markers+text',
+        marker=dict(
+            size=max(25, val**0.5 * 1.6),
+            color='red',
+            opacity=0.9
+        ),
+        textposition="top center",
+        showlegend=False
+    )
 
     fig.update_layout(dragmode=False)
-    fig.update_geos(fitbounds="locations", visible=False)
+
+    fig.update_geos(
+        fitbounds="locations",
+        visible=False
+    )
+    
+    # ✅ KEEP HOVER → remove staticPlot
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
 
     table = state_df[['State Name','Graduated']]
     table['Share'] = (table['Graduated']/table['Graduated'].sum()*100).round(2)
 
-    col1,col2 = st.columns([1.2,1])
+    # TABLE BELOW MAP
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(
+        table.sort_values('Graduated', ascending=False),
+        use_container_width=True,
+        height=450
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with col1:
         st.plotly_chart(fig,use_container_width=True,config={"staticPlot":True})
@@ -196,12 +249,30 @@ if section == "Michigan Distribution":
     )
 
     fig.update_layout(dragmode=False)
-    fig.update_geos(fitbounds="locations",visible=False)
+
+    fig.update_geos(
+        fitbounds="locations",
+        visible=False
+    )
+    
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     table = aligned[['County','Graduated']]
     table['Share']=(table['Graduated']/table['Graduated'].sum()*100).round(2)
 
-    col1,col2 = st.columns([1.2,1])
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(
+        table,
+        use_container_width=True,
+        height=450
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with col1:
         st.plotly_chart(fig,use_container_width=True,config={"staticPlot":True})
