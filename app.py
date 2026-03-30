@@ -169,7 +169,7 @@ if section == "National Distribution":
         showlegend=False
     )
 
-    fig.update_layout(dragmode=False)
+    fig.update_layout(height=800)
 
     fig.update_geos(
         fitbounds="locations",
