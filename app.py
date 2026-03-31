@@ -444,7 +444,7 @@ if section == "Employer Analysis":
     exclude = [
         "Data", "Company Industry", "Employers Total", "Occupations",
         "Dynamic Table", "SCO-112021 Marketing Managers",
-        "SOC-112022 Sales Managers"
+        "SOC-112022 Sales Managers", "Sheet22", "SOC Occupations"
     ]
 
     industry_sheets = [s for s in all_sheets if s not in exclude]
