@@ -126,65 +126,155 @@ st.sidebar.title("📘 Table of Contents")
 section = st.sidebar.radio("", ["National Distribution","Michigan Distribution","State Tables","County Tables", "Industry Analysis", "Employer Analysis"])
 
 # =====================================================
-# NATIONAL
+# NATIONAL DISTRIBUTION (FINAL VERSION)
 # =====================================================
 if section == "National Distribution":
 
     st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
 
+    # -------------------------
+    # AGGREGATE DATA
+    # -------------------------
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
 
+    # Split data
     us_states = state_df[state_df['stfip'] != "00"]
-    out_us = state_df[state_df['stfip']=="00"]
+    out_us = state_df[state_df['stfip'] == "00"]
 
+    # Log transform
     us_states['log'] = np.log1p(us_states['Graduated'])
 
-    fig = px.choropleth(
-        us_states,
+    # -------------------------
+    # SPLIT ALASKA
+    # -------------------------
+    main_us = us_states[~us_states['state'].isin(['AK'])]
+    alaska = us_states[us_states['state'] == 'AK']
+
+    # =====================================================
+    # MAIN US MAP
+    # =====================================================
+    fig_main = px.choropleth(
+        main_us,
         locations='state',
         locationmode='USA-states',
         color='log',
         color_continuous_scale='Blues'
     )
 
-    fig.update_traces(
-        customdata=us_states[['State Name','Graduated']],
-        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
+    fig_main.update_traces(
+        customdata=main_us[['State Name','Graduated']],
+        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
     )
 
+    # -------------------------
+    # OUT-OF-US BUBBLE
+    # -------------------------
     if not out_us.empty:
         val = int(out_us['Graduated'].values[0])
-        fig.add_scattergeo(
-        lon=[-66],
-        lat=[22],   # lower = bottom right
-        text=[f"Out of US<br>{val:,}"],
-        mode='markers+text',
-        marker=dict(
-            size=max(25, val**0.5 * 1.6),
-            color='Blue',
-            opacity=0.9
-        ),
-        textposition="top center",
-        showlegend=False
+
+        fig_main.add_scattergeo(
+            lon=[-66],
+            lat=[22],   # bottom-right
+            text=[f"Out of US<br>{val:,}"],
+            mode='markers+text',
+            marker=dict(
+                size=max(25, val**0.5 * 1.6),
+                color='red',
+                opacity=0.9
+            ),
+            textposition="top center",
+            showlegend=False
+        )
+
+    # -------------------------
+    # LAYOUT (STATIC + LARGE)
+    # -------------------------
+    fig_main.update_layout(
+        height=850,
+        margin=dict(l=0, r=0, t=10, b=0),
+        dragmode=False
     )
 
-    fig.update_layout(height = 800)
-
-    fig.update_geos(
+    fig_main.update_geos(
         fitbounds="locations",
         visible=False,
-        projection_scale=2.0
+        projection_scale=1.15
     )
-    
-    # ✅ KEEP HOVER → remove staticPlot
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
 
-    table = state_df[['State Name','Graduated']]
-    table['Share'] = (table['Graduated']/table['Graduated'].sum()*100).round(2)
+    # =====================================================
+    # ALASKA MAP (BELOW)
+    # =====================================================
+    fig_ak = px.choropleth(
+        alaska,
+        locations='state',
+        locationmode='USA-states',
+        color='log',
+        color_continuous_scale='Blues'
+    )
+
+    fig_ak.update_traces(
+        customdata=alaska[['State Name','Graduated']],
+        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
+    )
+
+    fig_ak.update_layout(
+        height=300,
+        margin=dict(l=0, r=0, t=0, b=0),
+        dragmode=False
+    )
+
+    fig_ak.update_geos(
+        fitbounds="locations",
+        visible=False
+    )
+
+    # =====================================================
+    # DISPLAY
+    # =====================================================
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.plotly_chart(fig_main, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.plotly_chart(fig_ak, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # =====================================================
+    # STATE TABLE (BELOW MAP)
+    # =====================================================
+    st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
+
+    table = state_df.copy()
+
+    table = table.rename(columns={
+        'stfip': 'StateFip',
+        'State Name': 'State'
+    })
+
+    table = table[['StateFip', 'State', 'Graduated']]
+
+    total = table['Graduated'].sum()
+
+    table['Share of Total'] = (
+        table['Graduated'] / total * 100
+    ).round(2)
+
+    table = table.sort_values('Graduated', ascending=False)
+
+    table['Graduated'] = table['Graduated'].astype(int)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.dataframe(
+        table,
+        use_container_width=True,
+        height=450
+    )
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # TABLE BELOW MAP
     st.markdown('<div class="card">', unsafe_allow_html=True)
