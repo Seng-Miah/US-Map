@@ -174,47 +174,110 @@ if section == "National":
     st.dataframe(table, use_container_width=True)
 
 # =====================================================
-# MICHIGAN
+# MICHIGAN DISTRIBUTION (FINAL)
 # =====================================================
 if section == "Michigan":
 
-    mi = df[df['stfip']=="26"]
+    # -------------------------
+    # TITLE + SOURCE
+    # -------------------------
+    st.markdown(
+        "<h3 style='text-align:center;color:white; font-size:30'>Alumni Location by County</h3>",
+        unsafe_allow_html=True
+    )
 
-    geo = requests.get("https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json").json()
+    st.markdown(
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GVSU Institutional Analysis</p>",
+        unsafe_allow_html=True
+    )
+
+    # -------------------------
+    # MAJOR FILTER
+    # -------------------------
+    majors = ['All'] + sorted(df['Major'].dropna().unique())
+    selected_major = st.selectbox("Select Major", majors)
+
+    # -------------------------
+    # FILTER DATA
+    # -------------------------
+    if selected_major == "All":
+        dff = df[df['stfip'] == "26"].copy()
+    else:
+        dff = df[(df['stfip'] == "26") & (df['Major'] == selected_major)].copy()
+
+    # -------------------------
+    # LOAD GEOJSON
+    # -------------------------
+    geo = requests.get(
+        "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
+    ).json()
 
     features = [f for f in geo["features"] if f["id"].startswith("26")]
 
-    counties = pd.DataFrame({
-        "fips":[f["id"] for f in features],
-        "County":[f["properties"]["NAME"] for f in features]
+    county_lookup = pd.DataFrame({
+        "fips": [f["id"] for f in features],
+        "County": [f["properties"]["NAME"] for f in features]
     })
 
-    agg = mi.groupby('fips',as_index=False)['Graduated'].sum()
+    # -------------------------
+    # AGGREGATE
+    # -------------------------
+    county_df = dff.groupby('fips', as_index=False)['Graduated'].sum()
 
-    merged = counties.merge(agg,on='fips',how='left')
-    merged['Graduated']=merged['Graduated'].fillna(0)
-    merged['log']=np.log1p(merged['Graduated'])
+    merged = county_lookup.merge(county_df, on='fips', how='left')
+    merged['Graduated'] = merged['Graduated'].fillna(0)
 
+    # -------------------------
+    # LOG + CLIP (FOR VISUAL BALANCE)
+    # -------------------------
+    merged['log'] = np.log1p(merged['Graduated'])
+
+    lower = merged['log'].quantile(0.05)
+    upper = merged['log'].quantile(0.95)
+
+    merged['log_clipped'] = merged['log'].clip(lower, upper)
+
+    # -------------------------
+    # MAP
+    # -------------------------
     fig = px.choropleth(
         merged,
-        geojson={"type":"FeatureCollection","features":features},
+        geojson={"type": "FeatureCollection", "features": features},
         locations='fips',
-        color='log'
+        color='log_clipped',
+        color_continuous_scale='Blues',
+        range_color=(lower, upper)
     )
 
     fig.update_traces(
-        customdata=merged[['County','Graduated']],
-        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}"
+        customdata=merged[['County', 'Graduated']],
+        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
     )
 
     fig.update_geos(fitbounds="locations", visible=False)
+
+    fig.update_layout(
+        height=700,
+        dragmode=False,
+        margin=dict(l=0, r=0, t=20, b=0)
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
-    table = merged[['County','Graduated']]
+    # -------------------------
+    # TABLE
+    # -------------------------
+    table = merged[['County', 'Graduated']].copy()
+
     total = table['Graduated'].sum()
-    table['Share of Total'] = (table['Graduated']/total*100).round(2)
+
+    if total > 0:
+        table['Share of Total'] = (table['Graduated'] / total * 100).round(2)
+    else:
+        table['Share of Total'] = 0
 
     table = table.sort_values('Graduated', ascending=False)
+
     st.dataframe(table, use_container_width=True)
 
 # =====================================================
