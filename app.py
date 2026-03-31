@@ -119,7 +119,7 @@ if section == "National":
         locationmode='USA-states',
         color='log_norm',
         scope='usa',
-        color_continuous_scale='Blues'
+        color_continuous_scale='Blues',
         range_color=(us_states['log'].min(), us_states['log'].max())  
     )
 
