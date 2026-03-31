@@ -367,7 +367,7 @@ if section == "Employer Analysis":
     # Remove non-industry sheets
     exclude = [
         "Data", "Company Industry", "Employers Total",
-        "Occupations", "Dynamic Table"
+        "Occupations", "Dynamic Table", "Majors", "Sheet22", "SOC Occupations"
     ]
 
     industry_sheets = [s for s in sheets if s not in exclude]
