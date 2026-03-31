@@ -116,6 +116,11 @@ if section == "National":
     us_states = state_df[state_df['stfip'] != "00"].copy()
 
     # -------------------------
+    # ENSURE NUMERIC
+    # -------------------------
+    us_states['Graduated'] = pd.to_numeric(us_states['Graduated'], errors='coerce')
+
+    # -------------------------
     # BIN FUNCTION (FINAL)
     # -------------------------
     def assign_bin(x):
@@ -177,46 +182,61 @@ if section == "National":
         color_discrete_sequence=colors
     )
 
+    # -------------------------
+    # HOVER (CLEAN)
+    # -------------------------
     fig.update_traces(
         customdata=us_states[['State Name','Graduated']],
         hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
     )
 
-    # 🔥 FORCE CAPTURE MISSING + 00
-    out_us_df = df[
-        (df['stfip'] == "00") |
-        (df['stfip'].isna())
-    ]
-    
+    # -------------------------
+    # OUT-OF-US BUBBLE (FLORIDA AREA)
+    # -------------------------
+    out_us_df = df[(df['stfip'] == "00") | (df['stfip'].isna())]
+
     out_us_total = out_us_df['Graduated'].sum()
     out_us_count = len(out_us_df)
-    
-    
-    # 🔥 FORCE VISIBLE POSITION
+
     fig.add_scattergeo(
-        lon=[-78],   # far right
-        lat=[25],    # bottom
+        lon=[-78],   # near Florida
+        lat=[24],
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
-        marker=dict(
-            size=max(50, out_us_total**0.5),
-            color='grey',
-            opacity=0.95
-        ),
+        marker=dict(size=50, color='red'),
         textposition="top center",
         showlegend=False
     )
 
-    fig.update_layout(height=750, dragmode=False)
+    # -------------------------
+    # LAYOUT
+    # -------------------------
+    fig.update_layout(
+        height=750,
+        dragmode=False,
+        margin=dict(l=0, r=0, t=20, b=0),
+        legend_title_text="Graduates (Binned)"
+    )
+
     fig.update_geos(scope="usa", visible=False)
 
+    # -------------------------
+    # DISPLAY
+    # -------------------------
     st.plotly_chart(fig, use_container_width=True)
 
-    # 🔥 TABLE
+    # =====================================================
+    # TABLE
+    # =====================================================
     st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
 
     table = state_df.copy()
-    table = table.rename(columns={'stfip':'StateFip','State Name':'State'})
+
+    table = table.rename(columns={
+        'stfip': 'StateFip',
+        'State Name': 'State'
+    })
+
     table = table[['StateFip','State','Graduated']]
 
     total = table['Graduated'].sum()
