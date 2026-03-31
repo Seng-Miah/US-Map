@@ -175,6 +175,7 @@ if section == "National":
         scope='usa',
         category_orders={"bin": bin_order},
         color_discrete_sequence=colors
+    )
 
     fig.update_traces(
         customdata=us_states[['State Name','Graduated']],
