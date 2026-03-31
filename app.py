@@ -161,7 +161,6 @@ if section == "National":
             opacity=0.95
         ),
         textposition="top center",
-        textcolor="black",
         showlegend=False
     )
 
