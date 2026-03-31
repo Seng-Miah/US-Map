@@ -156,7 +156,7 @@ if section == "National":
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
         marker=dict(
-            size=max(40, out_us_total**0.4),
+            size=max(50, out_us_total**0.5),
             color='grey',
             opacity=0.95
         ),
@@ -387,7 +387,7 @@ if section == "Industry Analysis":
     )
 
     st.markdown(
-        "<p style='text-align:center;color:white;font-size:18px;'>Source: GreyDI</p>",
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GrayDI</p>",
         unsafe_allow_html=True
     )
 
