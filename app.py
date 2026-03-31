@@ -96,9 +96,6 @@ section = st.sidebar.radio(
     ["National","Michigan","State Table","County Table", "Industry Analysis", "Employer Analysis"]
 )
 
-# =====================================================
-# NATIONAL
-# =====================================================
 if section == "National":
 
     st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
@@ -107,9 +104,10 @@ if section == "National":
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
 
     us_states = state_df[state_df['stfip'] != "00"].copy()
+
+    # 🔥 LOG + NORMALIZATION
     us_states['log'] = np.log1p(us_states['Graduated'])
 
-    # 🔥 NORMALIZE (CRITICAL)
     us_states['log_norm'] = (
         (us_states['log'] - us_states['log'].min()) /
         (us_states['log'].max() - us_states['log'].min())
@@ -129,7 +127,7 @@ if section == "National":
         hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
     )
 
-    # 🔥 FIXED OUT-OF-US
+    # 🔥 OUT-OF-US (FIXED)
     out_us_total = df[df['stfip'] == "00"]['Graduated'].sum()
     out_us_count = df[df['stfip'] == "00"].shape[0]
 
@@ -138,43 +136,27 @@ if section == "National":
         lat=[25],
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
-        marker=dict(
-            size=max(30, out_us_total**0.4),   # better scaling
-            color='red',
-            opacity=0.9
-        ),
-        textposition="top center",
+        marker=dict(size=max(30, out_us_total**0.4), color='red'),
         showlegend=False
     )
 
     fig.update_layout(height=750, dragmode=False)
-    fig.update_geos(
-    scope="usa",
-    visible=False,
-    projection_scale=1
-    )
+    fig.update_geos(scope="usa", visible=False)
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown('<div class="section-title">State Distribution Table</div>', unsafe_allow_html=True)
-    
+    # 🔥 TABLE
+    st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
+
     table = state_df.copy()
-    
-    table = table.rename(columns={
-        'stfip': 'StateFip',
-        'State Name': 'State'
-    })
-    
+    table = table.rename(columns={'stfip':'StateFip','State Name':'State'})
     table = table[['StateFip','State','Graduated']]
-    
+
     total = table['Graduated'].sum()
-    
-    table['Share of Total'] = (
-        table['Graduated'] / total * 100
-    ).round(2)
-    
+    table['Share of Total'] = (table['Graduated']/total*100).round(2)
+
     table = table.sort_values('Graduated', ascending=False)
-    
+
     st.dataframe(table, use_container_width=True)
 
 # =====================================================
