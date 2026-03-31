@@ -122,7 +122,7 @@ if section == "National":
     
     # 🔥 CLIP EXTREMES (KEY STEP)
     lower = us_states['value'].quantile(0.02)
-    upper = us_states['value'].quantile(0.75)  
+    upper = us_states['value'].quantile(0.70)  
     
     us_states['value_clipped'] = us_states['value'].clip(lower, upper)
     
