@@ -45,7 +45,7 @@ st.markdown("""
 st.markdown("""
 <div class="header">
 <h2>GRAND VALLEY STATE UNIVERSITY</h2>
-<p>Alumni Dashboard</p>
+<p>Alumni Location by State</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -98,7 +98,7 @@ section = st.sidebar.radio(
 
 if section == "National":
 
-    st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Source: GVSU Institutional Analysis"</div>', unsafe_allow_html=True)
 
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
