@@ -141,8 +141,8 @@ if section == "National":
     
     # 🔥 FORCE VISIBLE POSITION
     fig.add_scattergeo(
-        lon=[-85],   # far right
-        lat=[22],    # bottom
+        lon=[-78],   # far right
+        lat=[24],    # bottom
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
         marker=dict(
