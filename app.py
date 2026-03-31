@@ -156,8 +156,8 @@ if section == "National":
         text=[f"Out of US<br>{int(out_us_total):,}<br>"],
         mode='markers+text',
         marker=dict(
-            size=max(50, out_us_total**0.5),
-            color='grey',
+            size=max(70, out_us_total**0.5),
+            color='maroon',
             opacity=0.95
         ),
         textposition="top center",
