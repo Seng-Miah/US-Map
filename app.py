@@ -97,7 +97,7 @@ section = st.sidebar.radio(
     ["National","Michigan","State Table","County Table", "Industry Analysis", "Employer Analysis"]
 )
 
- =====================================================
+#=====================================================
 # NATIONAL SECTION
 # =====================================================
 if section == "National Distribution":
