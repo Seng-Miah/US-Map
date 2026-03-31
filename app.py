@@ -24,8 +24,8 @@ st.markdown("""
 [data-testid="stSidebar"] { background-color: #174f73; }
 [data-testid="stSidebar"] * { color: white !important; }
 
-.header { text-align:center; color:white; margin-bottom:10px; }
-.section-title { text-align:center; color:white; margin:10px 0; font-size:30px; }
+.header { text-align:center; color:white; margin-bottom:10px; font-size:30px }
+.section-title { text-align:center; color:white; margin:10px 0; font-size:18px; }
 
 .card {
     background:white;
