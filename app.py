@@ -273,70 +273,153 @@ if section == "County Table":
     st.dataframe(table, use_container_width=True)
 
 # =====================================================
-# INDUSTRY ANALYSIS
+# INDUSTRY ANALYSIS (FINAL)
 # =====================================================
 if section == "Industry Analysis":
 
-    df_ind = pd.read_excel("graydi_fips_mapv.xlsx", sheet_name="Company Industry")
+    st.markdown('<div class="section-title">Industry Analysis</div>', unsafe_allow_html=True)
+
+    FILE_PATH = "graydi_fips_mapv.xlsx"
+
+    df_ind = pd.read_excel(FILE_PATH, sheet_name="Company Industry")
+
+    # Remove totals
     df_ind = df_ind[~df_ind["Industries"].str.contains("Total", case=False, na=False)]
 
-    TOP = st.number_input("Top Industries",1,50,10)
+    TOP = st.number_input("Top Industries", 1, 50, 10)
 
     df_ind = df_ind.sort_values("Count of Company Industry", ascending=False).head(TOP)
 
     total = df_ind["Count of Company Industry"].sum()
-    df_ind["Percent"] = df_ind["Count of Company Industry"]/total
+    df_ind["Percent"] = df_ind["Count of Company Industry"] / total
     df_ind["log"] = np.log1p(df_ind["Count of Company Industry"])
 
-    fig = px.treemap(
+    # =====================================================
+    # LAYOUT
+    # =====================================================
+    col1, col2 = st.columns(2)
+
+    # BAR
+    with col1:
+        fig_bar = px.bar(
+            df_ind,
+            x="Count of Company Industry",
+            y="Industries",
+            orientation="h",
+            text="Count of Company Industry"
+        )
+        fig_bar.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # TREEMAP (LOG SCALE + CLEAN HOVER)
+    with col2:
+        fig_tree = px.treemap(
+            df_ind,
+            path=["Industries"],
+            values="Count of Company Industry",
+            color="log",
+            color_continuous_scale="Blues"
+        )
+
+        fig_tree.update_traces(
+            customdata=df_ind[['Percent']],
+            hovertemplate="<b>%{label}</b><br>%{customdata[0]:.2%}<extra></extra>"
+        )
+
+        st.plotly_chart(fig_tree, use_container_width=True)
+
+    # =====================================================
+    # HISTOGRAM (NEW)
+    # =====================================================
+    st.markdown('<div class="section-title">Distribution of Industry Counts</div>', unsafe_allow_html=True)
+
+    fig_hist = px.histogram(
         df_ind,
-        path=["Industries"],
-        values="Count of Company Industry",
-        color="log"
+        x="Count of Company Industry",
+        nbins=10
     )
 
-    fig.update_traces(
-        customdata=df_ind[['Percent']],
-        hovertemplate="<b>%{label}</b><br>%{customdata[0]:.2%}<extra></extra>"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig_hist, use_container_width=True)
 
 # =====================================================
-# EMPLOYER ANALYSIS
+# EMPLOYER ANALYSIS (FINAL)
 # =====================================================
 if section == "Employer Analysis":
+
+    st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
 
     FILE_PATH = "graydi_fips_mapv.xlsx"
     xls = pd.ExcelFile(FILE_PATH)
 
-    exclude = ["Data","Company Industry","Employers Total", "Dynamic Table,", "Sheet22", "Majors", "SOC Occupations"]
+    exclude = ["Data","Company Industry","Employers Total"]
     sheets = [s for s in xls.sheet_names if s not in exclude]
 
-    col1,col2 = st.columns([2,1])
+    col1, col2 = st.columns([2,1])
 
     with col1:
         industry = st.selectbox("Industry", sheets)
     with col2:
-        TOP = st.number_input("Top N",1,100,10)
+        TOP = st.number_input("Top N Employers", 1, 100, 10)
 
     df_emp = pd.read_excel(FILE_PATH, sheet_name=industry)
 
     name_col = df_emp.columns[0]
     value_col = df_emp.select_dtypes(include=np.number).columns[0]
 
-    df_emp = df_emp[[name_col,value_col]].dropna()
+    df_emp = df_emp[[name_col, value_col]].dropna()
+
+    # 🔥 REMOVE TOTAL ROWS (IMPORTANT FIX)
+    df_emp = df_emp[~df_emp[name_col].str.contains("Total", case=False, na=False)]
+
     df_emp = df_emp.sort_values(value_col, ascending=False).head(TOP)
 
     total = df_emp[value_col].sum()
-    df_emp["Percent"] = df_emp[value_col]/total
+    df_emp["Percent"] = df_emp[value_col] / total
     df_emp["log"] = np.log1p(df_emp[value_col])
 
-    fig = px.treemap(df_emp, path=[name_col], values=value_col, color="log")
+    # =====================================================
+    # LAYOUT
+    # =====================================================
+    col1, col2 = st.columns(2)
 
-    fig.update_traces(
-        customdata=df_emp[['Percent']],
-        hovertemplate="<b>%{label}</b><br>%{customdata[0]:.2%}<extra></extra>"
+    # BAR
+    with col1:
+        fig_bar = px.bar(
+            df_emp,
+            x=value_col,
+            y=name_col,
+            orientation="h",
+            text=value_col
+        )
+        fig_bar.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # TREEMAP
+    with col2:
+        fig_tree = px.treemap(
+            df_emp,
+            path=[name_col],
+            values=value_col,
+            color="log",
+            color_continuous_scale="Blues"
+        )
+
+        fig_tree.update_traces(
+            customdata=df_emp[['Percent']],
+            hovertemplate="<b>%{label}</b><br>%{customdata[0]:.2%}<extra></extra>"
+        )
+
+        st.plotly_chart(fig_tree, use_container_width=True)
+
+    # =====================================================
+    # HISTOGRAM (NEW)
+    # =====================================================
+    st.markdown('<div class="section-title">Distribution of Employer Counts</div>', unsafe_allow_html=True)
+
+    fig_hist = px.histogram(
+        df_emp,
+        x=value_col,
+        nbins=10
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig_hist, use_container_width=True)
