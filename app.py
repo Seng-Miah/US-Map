@@ -108,7 +108,7 @@ if section == "National":
     # 🔥 LOG + NORMALIZATION
     us_states['log'] = np.log1p(us_states['Graduated'])
 
-    us_states['log_norm'] = (
+    us_states['log'] = (
         (us_states['log'] - us_states['log'].min()) /
         (us_states['log'].max() - us_states['log'].min())
     )
@@ -117,10 +117,9 @@ if section == "National":
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='log_norm',
+        color='log',
         scope='usa',
-        color_continuous_scale='Blues',
-        range_color=(us_states['log'].min(), us_states['log'].max())  
+        color_continuous_scale='Blues'  
     )
 
     fig.update_traces(
@@ -135,9 +134,6 @@ if section == "National":
     out_us_total = out_us_df['Graduated'].sum()
     out_us_count = len(out_us_df)
     
-    # DEBUG (remove later)
-    st.write("DEBUG Out-of-US total:", out_us_total)
-    st.write("DEBUG Out-of-US count:", out_us_count)
     
     # 🔥 ALWAYS SHOW (no condition)
     fig.add_scattergeo(
