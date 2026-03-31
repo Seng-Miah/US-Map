@@ -113,7 +113,9 @@ fips_to_state = {
 def load_data():
     df = pd.read_csv("gvsudegree_clean.csv")
     df['Graduated'] = pd.to_numeric(df['Graduated'], errors='coerce').fillna(0)
-    df['stfip'] = pd.to_numeric(df['stfip'], errors='coerce').fillna(0).astype(int).astype(str).str.zfill(2)
+    df['stfip'] = pd.to_numeric(df['stfip'], errors='coerce')
+    df['stfip'] = df['stfip'].fillna(0)
+    df['stfip'] = df['stfip'].astype(int).astype(str).str.zfill(2)
     df['fips'] = pd.to_numeric(df['fips'], errors='coerce').fillna(0).astype(int).astype(str).str.zfill(5)
     return df
 
@@ -276,26 +278,7 @@ if section == "National Distribution":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # TABLE BELOW MAP
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    st.markdown('<div class="table-box">', unsafe_allow_html=True)
-    st.dataframe(
-        table.sort_values('Graduated', ascending=False),
-        use_container_width=True,
-        height=450
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    with col1:
-        st.plotly_chart(fig,use_container_width=True,config={"staticPlot":True})
-
-    with col2:
-        st.markdown('<div class="table-box">', unsafe_allow_html=True)
-        st.dataframe(table.sort_values('Graduated',ascending=False),use_container_width=True,height=500)
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
 # MICHIGAN
