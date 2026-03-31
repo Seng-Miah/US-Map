@@ -25,7 +25,7 @@ st.markdown("""
 [data-testid="stSidebar"] * { color: white !important; }
 
 .header { text-align:center; color:white; margin-bottom:10px; }
-.section-title { text-align:center; color:white; margin:10px 0; font-size:18px; }
+.section-title { text-align:center; color:white; margin:10px 0; font-size:30px; }
 
 .card {
     background:white;
