@@ -115,23 +115,28 @@ if section == "National":
 
     us_states = state_df[state_df['stfip'] != "00"].copy()
 
-    # 🔥 LOG + NORMALIZATION
-    # 🔥 LOG TRANSFORM
-    us_states['log'] = np.log1p(us_states['Graduated'])
+    # =====================================================
+    # USE RAW VALUES (NO LOG)
+    # =====================================================
+    us_states['value'] = us_states['Graduated']
     
-    # 🔥 CLIP EXTREMES (KEY FIX)
-    lower = us_states['log'].quantile(0.05)
-    upper = us_states['log'].quantile(0.95)
+    # 🔥 CLIP EXTREMES (KEY STEP)
+    lower = us_states['value'].quantile(0.05)
+    upper = us_states['value'].quantile(0.90)   # tighten upper bound
     
-    us_states['log_clipped'] = us_states['log'].clip(lower, upper)
-
+    us_states['value_clipped'] = us_states['value'].clip(lower, upper)
+    
+    # =====================================================
+    # MAP
+    # =====================================================
     fig = px.choropleth(
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='log',
+        color='value_clipped',   # ✅ use clipped RAW values
         scope='usa',
-        color_continuous_scale='Blues'  
+        color_continuous_scale='Blues',
+        range_color=(lower, upper)   # 🔥 CRITICAL
     )
 
     fig.update_traces(
