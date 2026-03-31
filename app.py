@@ -135,7 +135,11 @@ if section == "National":
     )
 
     fig.update_layout(height=750, dragmode=False)
-    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_geos(
+    scope="usa",
+    visible=False,
+    projection_scale=1
+    )
 
     st.plotly_chart(fig, use_container_width=True)
 
