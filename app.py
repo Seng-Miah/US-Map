@@ -98,7 +98,7 @@ section = st.sidebar.radio(
 )
 
 # =====================================================
-# NATIONAL DISTRIBUTION (FINAL TRUE VERSION)
+# NATIONAL DISTRIBUTION (FINAL WORKING)
 # =====================================================
 if section == "National Distribution":
 
@@ -110,22 +110,17 @@ if section == "National Distribution":
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
 
-    # -------------------------
-    # LOG SCALE
-    # -------------------------
-    state_df['log'] = np.log1p(state_df['Graduated'])
+    # Remove Out-of-US from map
+    us_states = state_df[state_df['stfip'] != "00"].copy()
 
-    # -------------------------
-    # MAIN US (exclude AK)
-    # -------------------------
-    main = state_df[(state_df['stfip'] != "00") & (state_df['state'] != "AK")]
-    alaska = state_df[state_df['state'] == "AK"]
+    # 🔥 LOG SCALE
+    us_states['log'] = np.log1p(us_states['Graduated'])
 
     # =====================================================
-    # MAIN FIGURE
+    # SINGLE MAP (CRITICAL FIX)
     # =====================================================
     fig = px.choropleth(
-        main,
+        us_states,
         locations='state',
         locationmode='USA-states',
         color='log',
@@ -137,23 +132,9 @@ if section == "National Distribution":
     # HOVER
     # -------------------------
     fig.update_traces(
-        customdata=main[['State Name','Graduated']],
-        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}"
+        customdata=us_states[['State Name','Graduated']],
+        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
     )
-
-    # =====================================================
-    # 🔥 ADD ALASKA INSIDE SAME MAP (KEY FIX)
-    # =====================================================
-    if not alaska.empty:
-
-        fig.add_trace(
-            px.choropleth(
-                alaska,
-                locations='state',
-                locationmode='USA-states',
-                color='log'
-            ).data[0]
-        )
 
     # =====================================================
     # 🔥 CORRECT OUT-OF-US (RAW DATA)
@@ -161,7 +142,6 @@ if section == "National Distribution":
     out_us_total = df[df['stfip']=="00"]['Graduated'].sum()
 
     if out_us_total > 0:
-
         fig.add_scattergeo(
             lon=[-66],
             lat=[22],
@@ -169,8 +149,10 @@ if section == "National Distribution":
             mode='markers+text',
             marker=dict(
                 size=max(25, out_us_total**0.5 * 1.6),
-                color='red'
+                color='red',
+                opacity=0.9
             ),
+            textposition="top center",
             showlegend=False
         )
 
@@ -211,11 +193,9 @@ if section == "National Distribution":
     table = table[['StateFip','State','Graduated']]
 
     total = table['Graduated'].sum()
-
     table['Share of Total'] = (table['Graduated']/total*100).round(2)
 
     table = table.sort_values('Graduated', ascending=False)
-
     table['Graduated'] = table['Graduated'].astype(int)
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
