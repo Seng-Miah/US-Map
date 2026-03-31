@@ -109,11 +109,17 @@ if section == "National":
     us_states = state_df[state_df['stfip'] != "00"].copy()
     us_states['log'] = np.log1p(us_states['Graduated'])
 
+    # 🔥 NORMALIZE (CRITICAL)
+    us_states['log_norm'] = (
+        (us_states['log'] - us_states['log'].min()) /
+        (us_states['log'].max() - us_states['log'].min())
+    )
+
     fig = px.choropleth(
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='log',
+        color='log_norm',
         scope='usa',
         color_continuous_scale='Blues'
     )
@@ -124,14 +130,21 @@ if section == "National":
     )
 
     # 🔥 FIXED OUT-OF-US
-    out_us_total = df[df['stfip']=="00"]['Graduated'].sum()
+    out_us_total = df[df['stfip'] == "00"]['Graduated'].sum()
+    out_us_count = df[df['stfip'] == "00"].shape[0]
 
     fig.add_scattergeo(
         lon=[-65],
-        lat=[27],
-        text=[f"Out of US<br>{int(out_us_total):,}"],
+        lat=[25],
+        text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
-        marker=dict(size=40, color='red')
+        marker=dict(
+            size=max(30, out_us_total**0.4),   # better scaling
+            color='red',
+            opacity=0.9
+        ),
+        textposition="top center",
+        showlegend=False
     )
 
     fig.update_layout(height=750, dragmode=False)
@@ -142,6 +155,27 @@ if section == "National":
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown('<div class="section-title">State Distribution Table</div>', unsafe_allow_html=True)
+    
+    table = state_df.copy()
+    
+    table = table.rename(columns={
+        'stfip': 'StateFip',
+        'State Name': 'State'
+    })
+    
+    table = table[['StateFip','State','Graduated']]
+    
+    total = table['Graduated'].sum()
+    
+    table['Share of Total'] = (
+        table['Graduated'] / total * 100
+    ).round(2)
+    
+    table = table.sort_values('Graduated', ascending=False)
+    
+    st.dataframe(table, use_container_width=True)
 
 # =====================================================
 # MICHIGAN
