@@ -310,7 +310,7 @@ if section == "Employer Analysis":
     FILE_PATH = "graydi_fips_mapv.xlsx"
     xls = pd.ExcelFile(FILE_PATH)
 
-    exclude = ["Data","Company Industry","Employers Total"]
+    exclude = ["Data","Company Industry","Employers Total", "Dynamic Table,", "Sheet22", "Majors", "SOC Occupations"]
     sheets = [s for s in xls.sheet_names if s not in exclude]
 
     col1,col2 = st.columns([2,1])
