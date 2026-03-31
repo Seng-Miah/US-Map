@@ -58,7 +58,6 @@ def load_data():
 
     df['Graduated'] = pd.to_numeric(df['Graduated'], errors='coerce').fillna(0)
 
-    # 🔥 CRITICAL FIX: missing → 00
     df['stfip'] = pd.to_numeric(df['stfip'], errors='coerce')
     df['stfip'] = df['stfip'].fillna(0)
     df['stfip'] = df['stfip'].astype(int).astype(str).str.zfill(2)
@@ -97,85 +96,48 @@ section = st.sidebar.radio(
     ["National","Michigan","State Table","County Table", "Industry Analysis", "Employer Analysis"]
 )
 
-#=====================================================
-# NATIONAL SECTION
 # =====================================================
-if section == "National Distribution":
+# NATIONAL
+# =====================================================
+if section == "National":
 
     st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
 
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
 
-    # US states only
-    us_states = state_df[
-        (state_df['stfip'] != "00") &
-        (~state_df['stfip'].isin(['60','66','69','72','78']))
-    ]
+    us_states = state_df[state_df['stfip'] != "00"].copy()
+    us_states['log'] = np.log1p(us_states['Graduated'])
 
-    # Out of US
-    out_us = state_df[state_df['stfip'] == "00"]
-
-    # =====================================================
-    # MAP (FIXED)
-    # =====================================================
-    import numpy as np
-
-    us_states['log_grad'] = np.log1p(us_states['Graduated'])
-    
     fig = px.choropleth(
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='log_grad',   # 👈 use log values
+        color='log',
         scope='usa',
         color_continuous_scale='Blues'
     )
-    
+
     fig.update_traces(
         customdata=us_states[['State Name','Graduated']],
-        hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
+        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
     )
 
-    if not out_us.empty:
+    # 🔥 FIXED OUT-OF-US
+    out_us_total = df[df['stfip']=="00"]['Graduated'].sum()
 
-        value = int(out_us['Graduated'].values[0])
-    
-        fig.add_scattergeo(
-            lon=[-65],   # 👉 slightly more right
-            lat=[27],    # 👉 slightly higher (better alignment)
-            text=[f"Out of US<br>{value:,}"],
-            mode='markers+text',
-            marker=dict(
-                size=max(20, value**0.5 * 1.5),
-                color='red',
-                opacity=0.85
-            ),
-            textposition="top center",
-            showlegend=False
-        )
-
-    fig.update_layout(
-        paper_bgcolor='white',
-        plot_bgcolor='white',
-        height=650,
-        margin=dict(l=0, r=0, t=30, b=0)
+    fig.add_scattergeo(
+        lon=[-65],
+        lat=[27],
+        text=[f"Out of US<br>{int(out_us_total):,}"],
+        mode='markers+text',
+        marker=dict(size=40, color='red')
     )
 
-    st.markdown('<div class="box">', unsafe_allow_html=True)
+    fig.update_layout(height=750, dragmode=False)
+    fig.update_geos(fitbounds="locations", visible=False)
+
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # TABLE
-    st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
-
-    table = state_df.copy()
-    total = table['Graduated'].sum()
-    table['Share'] = (table['Graduated']/total*100).round(2)
-
-    st.markdown('<div class="table-box">', unsafe_allow_html=True)
-    st.dataframe(table.sort_values('Graduated', ascending=False), use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
 # MICHIGAN
@@ -211,14 +173,14 @@ if section == "Michigan":
         hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}"
     )
 
-    fig.update_layout(height=700, dragmode=False)
     fig.update_geos(fitbounds="locations", visible=False)
-
     st.plotly_chart(fig, use_container_width=True)
 
     table = merged[['County','Graduated']]
-    table = table.sort_values('Graduated', ascending=False)
+    total = table['Graduated'].sum()
+    table['Share of Total'] = (table['Graduated']/total*100).round(2)
 
+    table = table.sort_values('Graduated', ascending=False)
     st.dataframe(table, use_container_width=True)
 
 # =====================================================
@@ -226,14 +188,21 @@ if section == "Michigan":
 # =====================================================
 if section == "State Table":
 
-    table = df.groupby('stfip',as_index=False)['Graduated'].sum()
-    table['State']=table['stfip'].map(fips_to_state)
+    majors = ['All'] + sorted(df['Major'].dropna().unique())
+    selected_major = st.selectbox("Major", majors)
 
-    table['Share of Total'] = (table['Graduated']/table['Graduated'].sum()*100).round(2)
+    dff = df if selected_major=="All" else df[df['Major']==selected_major]
+
+    table = dff.groupby('stfip', as_index=False)['Graduated'].sum()
+    table['State'] = table['stfip'].map(fips_to_state)
+
+    total = table['Graduated'].sum()
+    table['Share of Total'] = (table['Graduated']/total*100).round(2)
 
     table = table.rename(columns={'stfip':'StateFip'})
-    table = table.sort_values('Graduated', ascending=False)
+    table = table[['StateFip','State','Graduated','Share of Total']]
 
+    table = table.sort_values('Graduated', ascending=False)
     st.dataframe(table, use_container_width=True)
 
 # =====================================================
@@ -242,185 +211,102 @@ if section == "State Table":
 if section == "County Table":
 
     states = sorted(df['stfip'].map(fips_to_state).dropna().unique())
-    state = st.selectbox("State", states)
+    selected_state = st.selectbox("State", states)
 
-    stfip_val = {v:k for k,v in fips_to_state.items()}[state]
+    majors = ['All'] + sorted(df['Major'].dropna().unique())
+    selected_major = st.selectbox("Major", majors)
+
+    stfip_val = {v:k for k,v in fips_to_state.items()}[selected_state]
 
     geo = requests.get("https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json").json()
 
     lookup = pd.DataFrame({
         "fips":[f["id"] for f in geo["features"]],
-        "County":[f["properties"]["NAME"] for f in geo["features"]
-    ]})
+        "County":[f["properties"]["NAME"] for f in geo["features"]]
+    })
 
     lookup = lookup[lookup['fips'].str.startswith(stfip_val)]
 
-    agg = df[df['stfip']==stfip_val].groupby('fips',as_index=False)['Graduated'].sum()
+    dff = df if selected_major=="All" else df[df['Major']==selected_major]
+    dff = dff[dff['stfip']==stfip_val]
+
+    agg = dff.groupby('fips',as_index=False)['Graduated'].sum()
 
     table = lookup.merge(agg,on='fips',how='left')
     table['Graduated']=table['Graduated'].fillna(0)
 
+    total = table['Graduated'].sum()
+    table['Share of Total'] = (table['Graduated']/total*100).round(2)
+
     table = table.sort_values('Graduated', ascending=False)
 
     st.dataframe(table, use_container_width=True)
+
 # =====================================================
 # INDUSTRY ANALYSIS
 # =====================================================
 if section == "Industry Analysis":
 
-    st.markdown('<div class="section-title">Industry Analysis</div>', unsafe_allow_html=True)
-
-    FILE_PATH = "graydi_fips_mapv.xlsx"
-
-    df_ind = pd.read_excel(FILE_PATH, sheet_name="Company Industry")
-
-    # Remove totals
+    df_ind = pd.read_excel("graydi_fips_mapv.xlsx", sheet_name="Company Industry")
     df_ind = df_ind[~df_ind["Industries"].str.contains("Total", case=False, na=False)]
 
-    # Top  input (no slider)
-    TOP = st.number_input(
-        "Top Industries",
-        min_value=1,
-        max_value=50,
-        value=10,
-        step=1
-    )
+    TOP = st.number_input("Top Industries",1,50,10)
 
-    df_ind = df_ind.sort_values("Count of Company Industry", ascending=False).head(TOP_N)
+    df_ind = df_ind.sort_values("Count of Company Industry", ascending=False).head(TOP)
 
     total = df_ind["Count of Company Industry"].sum()
-    df_ind["Percent"] = df_ind["Count of Company Industry"] / total
+    df_ind["Percent"] = df_ind["Count of Company Industry"]/total
+    df_ind["log"] = np.log1p(df_ind["Count of Company Industry"])
 
-    # -------------------------
-    # CHARTS
-    # -------------------------
-    col1, col2 = st.columns(2)
+    fig = px.treemap(
+        df_ind,
+        path=["Industries"],
+        values="Count of Company Industry",
+        color="log"
+    )
 
-    # BAR
-    with col1:
-        fig_bar = px.bar(
-            df_ind,
-            x="Count of Company Industry",
-            y="Industries",
-            orientation="h",
-            text="Count of Company Industry"
-        )
-        fig_bar.update_yaxes(autorange="reversed")
-        st.plotly_chart(fig_bar, use_container_width=True)
+    fig.update_traces(
+        customdata=df_ind[['Percent']],
+        hovertemplate="<b>%{label}</b><br>%{customdata[0]:.2%}<extra></extra>"
+    )
 
-    # TREEMAP
-    with col2:
-        fig_tree = px.treemap(
-            df_ind,
-            path=["Industries"],
-            values="Count of Company Industry",
-            color="Percent",
-            color_continuous_scale="Blues"
-        )
-        st.plotly_chart(fig_tree, use_container_width=True)
-
-    # TABLE
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.dataframe(df_ind, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# EMPLOYER ANALYSIS (FINAL)
+# EMPLOYER ANALYSIS
 # =====================================================
 if section == "Employer Analysis":
 
-    st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
-
     FILE_PATH = "graydi_fips_mapv.xlsx"
-
-    # -----------------------------
-    # LOAD SHEETS
-    # -----------------------------
     xls = pd.ExcelFile(FILE_PATH)
-    sheets = xls.sheet_names
 
-    # Remove non-industry sheets
-    exclude = [
-        "Data", "Company Industry", "Employers Total",
-        "Occupations", "Dynamic Table", "Majors", "Sheet22", "SOC Occupations"
-    ]
+    exclude = ["Data","Company Industry","Employers Total"]
+    sheets = [s for s in xls.sheet_names if s not in exclude]
 
-    industry_sheets = [s for s in sheets if s not in exclude]
-
-    # -----------------------------
-    # FILTER BAR (CLEAN)
-    # -----------------------------
-    col1, col2 = st.columns([2,1])
+    col1,col2 = st.columns([2,1])
 
     with col1:
-        selected_industry = st.selectbox("Industry", industry_sheets)
-
+        industry = st.selectbox("Industry", sheets)
     with col2:
-        TOP_N = st.number_input(
-            "Top N Employers",
-            min_value=1,
-            max_value=100,
-            value=10,
-            step=1
-        )
+        TOP = st.number_input("Top N",1,100,10)
 
-    # -----------------------------
-    # LOAD DATA
-    # -----------------------------
-    df_emp = pd.read_excel(FILE_PATH, sheet_name=selected_industry)
+    df_emp = pd.read_excel(FILE_PATH, sheet_name=industry)
 
-    cols = df_emp.columns.tolist()
+    name_col = df_emp.columns[0]
+    value_col = df_emp.select_dtypes(include=np.number).columns[0]
 
-    name_col = cols[0]
-
-    # detect numeric column
-    value_col = None
-    for c in cols:
-        if df_emp[c].dtype != 'object':
-            value_col = c
-            break
-
-    df_emp = df_emp[[name_col, value_col]].dropna()
-
-    # remove totals
-    df_emp = df_emp[~df_emp[name_col].str.contains("Total", case=False, na=False)]
-
-    df_emp = df_emp.sort_values(value_col, ascending=False).head(TOP_N)
+    df_emp = df_emp[[name_col,value_col]].dropna()
+    df_emp = df_emp.sort_values(value_col, ascending=False).head(TOP)
 
     total = df_emp[value_col].sum()
-    df_emp["Percent"] = df_emp[value_col] / total
+    df_emp["Percent"] = df_emp[value_col]/total
+    df_emp["log"] = np.log1p(df_emp[value_col])
 
-    # -----------------------------
-    # CHARTS
-    # -----------------------------
-    col1, col2 = st.columns(2)
+    fig = px.treemap(df_emp, path=[name_col], values=value_col, color="log")
 
-    # BAR
-    with col1:
-        fig_bar = px.bar(
-            df_emp,
-            x=value_col,
-            y=name_col,
-            orientation="h",
-            text=value_col
-        )
-        fig_bar.update_yaxes(autorange="reversed")
-        st.plotly_chart(fig_bar, use_container_width=True)
+    fig.update_traces(
+        customdata=df_emp[['Percent']],
+        hovertemplate="<b>%{label}</b><br>%{customdata[0]:.2%}<extra></extra>"
+    )
 
-    # TREEMAP
-    with col2:
-        fig_tree = px.treemap(
-            df_emp,
-            path=[name_col],
-            values=value_col,
-            color="Percent",
-            color_continuous_scale="Blues"
-        )
-        st.plotly_chart(fig_tree, use_container_width=True)
-
-    # -----------------------------
-    # TABLE
-    # -----------------------------
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.dataframe(df_emp, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True)
