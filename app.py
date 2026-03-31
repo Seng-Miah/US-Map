@@ -94,73 +94,133 @@ fips_to_state = {
 # =====================================================
 section = st.sidebar.radio(
     "Table of Contents",
-    ["National","Michigan","State Table","County Table"]
+    ["National","Michigan","State Table","County Table", "Industry Analysis", "Employer Analysis"]
 )
 
 # =====================================================
-# NATIONAL
+# NATIONAL DISTRIBUTION (FINAL TRUE VERSION)
 # =====================================================
-if section == "National":
+if section == "National Distribution":
 
     st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
 
+    # -------------------------
+    # AGGREGATE
+    # -------------------------
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
-    state_df['State'] = state_df['stfip'].map(fips_to_state)
+    state_df['State Name'] = state_df['stfip'].map(fips_to_state)
 
-    us_states = state_df[state_df['stfip'] != "00"]
+    # -------------------------
+    # LOG SCALE
+    # -------------------------
+    state_df['log'] = np.log1p(state_df['Graduated'])
 
-    # 🔥 LOG SCALE
-    us_states['log'] = np.log1p(us_states['Graduated'])
+    # -------------------------
+    # MAIN US (exclude AK)
+    # -------------------------
+    main = state_df[(state_df['stfip'] != "00") & (state_df['state'] != "AK")]
+    alaska = state_df[state_df['state'] == "AK"]
 
-    # split alaska
-    main = us_states[us_states['state'] != 'AK']
-    alaska = us_states[us_states['state'] == 'AK']
-
+    # =====================================================
+    # MAIN FIGURE
+    # =====================================================
     fig = px.choropleth(
         main,
         locations='state',
         locationmode='USA-states',
         color='log',
-        color_continuous_scale='Blues'
+        color_continuous_scale='Blues',
+        scope='usa'
     )
 
+    # -------------------------
+    # HOVER
+    # -------------------------
     fig.update_traces(
-        customdata=main[['State','Graduated']],
+        customdata=main[['State Name','Graduated']],
         hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}"
     )
 
-    # 🔥 CORRECT OUT OF US
+    # =====================================================
+    # 🔥 ADD ALASKA INSIDE SAME MAP (KEY FIX)
+    # =====================================================
+    if not alaska.empty:
+
+        fig.add_trace(
+            px.choropleth(
+                alaska,
+                locations='state',
+                locationmode='USA-states',
+                color='log'
+            ).data[0]
+        )
+
+    # =====================================================
+    # 🔥 CORRECT OUT-OF-US (RAW DATA)
+    # =====================================================
     out_us_total = df[df['stfip']=="00"]['Graduated'].sum()
 
-    fig.add_scattergeo(
-        lon=[-66], lat=[22],
-        text=[f"Out of US<br>{int(out_us_total):,}"],
-        mode='markers+text',
-        marker=dict(size=40, color='red')
+    if out_us_total > 0:
+
+        fig.add_scattergeo(
+            lon=[-66],
+            lat=[22],
+            text=[f"Out of US<br>{int(out_us_total):,}"],
+            mode='markers+text',
+            marker=dict(
+                size=max(25, out_us_total**0.5 * 1.6),
+                color='red'
+            ),
+            showlegend=False
+        )
+
+    # -------------------------
+    # LAYOUT
+    # -------------------------
+    fig.update_layout(
+        height=850,
+        dragmode=False,
+        margin=dict(l=0, r=0, t=10, b=0)
     )
 
-    fig.update_layout(height=800, dragmode=False)
-    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_geos(
+        fitbounds="locations",
+        visible=False,
+        projection_scale=1.1
+    )
 
+    # -------------------------
+    # DISPLAY
+    # -------------------------
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # alaska
-    fig_ak = px.choropleth(alaska, locations='state', locationmode='USA-states', color='log')
-    fig_ak.update_layout(height=250, dragmode=False)
-    fig_ak.update_geos(fitbounds="locations", visible=False)
+    # =====================================================
+    # STATE TABLE
+    # =====================================================
+    st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
 
-    st.plotly_chart(fig_ak, use_container_width=True)
+    table = state_df.copy()
 
-    # table
-    table = state_df[['stfip','State','Graduated']]
-    table = table.rename(columns={'stfip':'StateFip'})
-    table['Share of Total'] = (table['Graduated']/table['Graduated'].sum()*100).round(2)
+    table = table.rename(columns={
+        'stfip': 'StateFip',
+        'State Name': 'State'
+    })
+
+    table = table[['StateFip','State','Graduated']]
+
+    total = table['Graduated'].sum()
+
+    table['Share of Total'] = (table['Graduated']/total*100).round(2)
 
     table = table.sort_values('Graduated', ascending=False)
 
-    st.dataframe(table, use_container_width=True)
+    table['Graduated'] = table['Graduated'].astype(int)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.dataframe(table, use_container_width=True, height=450)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
 # MICHIGAN
@@ -248,3 +308,164 @@ if section == "County Table":
     table = table.sort_values('Graduated', ascending=False)
 
     st.dataframe(table, use_container_width=True)
+# =====================================================
+# INDUSTRY ANALYSIS
+# =====================================================
+if section == "Industry Analysis":
+
+    st.markdown('<div class="section-title">Industry Analysis</div>', unsafe_allow_html=True)
+
+    FILE_PATH = "graydi_fips_mapv.xlsx"
+
+    df_ind = pd.read_excel(FILE_PATH, sheet_name="Company Industry")
+
+    # Remove totals
+    df_ind = df_ind[~df_ind["Industries"].str.contains("Total", case=False, na=False)]
+
+    # Top N input (no slider)
+    TOP_N = st.number_input(
+        "Top N Industries",
+        min_value=1,
+        max_value=50,
+        value=10,
+        step=1
+    )
+
+    df_ind = df_ind.sort_values("Count of Company Industry", ascending=False).head(TOP_N)
+
+    total = df_ind["Count of Company Industry"].sum()
+    df_ind["Percent"] = df_ind["Count of Company Industry"] / total
+
+    # -------------------------
+    # CHARTS
+    # -------------------------
+    col1, col2 = st.columns(2)
+
+    # BAR
+    with col1:
+        fig_bar = px.bar(
+            df_ind,
+            x="Count of Company Industry",
+            y="Industries",
+            orientation="h",
+            text="Count of Company Industry"
+        )
+        fig_bar.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # TREEMAP
+    with col2:
+        fig_tree = px.treemap(
+            df_ind,
+            path=["Industries"],
+            values="Count of Company Industry",
+            color="Percent",
+            color_continuous_scale="Blues"
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
+
+    # TABLE
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.dataframe(df_ind, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =====================================================
+# EMPLOYER ANALYSIS (FINAL)
+# =====================================================
+if section == "Employer Analysis":
+
+    st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
+
+    FILE_PATH = "graydi_fips_mapv.xlsx"
+
+    # -----------------------------
+    # LOAD SHEETS
+    # -----------------------------
+    xls = pd.ExcelFile(FILE_PATH)
+    sheets = xls.sheet_names
+
+    # Remove non-industry sheets
+    exclude = [
+        "Data", "Company Industry", "Employers Total",
+        "Occupations", "Dynamic Table"
+    ]
+
+    industry_sheets = [s for s in sheets if s not in exclude]
+
+    # -----------------------------
+    # FILTER BAR (CLEAN)
+    # -----------------------------
+    col1, col2 = st.columns([2,1])
+
+    with col1:
+        selected_industry = st.selectbox("Industry", industry_sheets)
+
+    with col2:
+        TOP_N = st.number_input(
+            "Top N Employers",
+            min_value=1,
+            max_value=100,
+            value=10,
+            step=1
+        )
+
+    # -----------------------------
+    # LOAD DATA
+    # -----------------------------
+    df_emp = pd.read_excel(FILE_PATH, sheet_name=selected_industry)
+
+    cols = df_emp.columns.tolist()
+
+    name_col = cols[0]
+
+    # detect numeric column
+    value_col = None
+    for c in cols:
+        if df_emp[c].dtype != 'object':
+            value_col = c
+            break
+
+    df_emp = df_emp[[name_col, value_col]].dropna()
+
+    # remove totals
+    df_emp = df_emp[~df_emp[name_col].str.contains("Total", case=False, na=False)]
+
+    df_emp = df_emp.sort_values(value_col, ascending=False).head(TOP_N)
+
+    total = df_emp[value_col].sum()
+    df_emp["Percent"] = df_emp[value_col] / total
+
+    # -----------------------------
+    # CHARTS
+    # -----------------------------
+    col1, col2 = st.columns(2)
+
+    # BAR
+    with col1:
+        fig_bar = px.bar(
+            df_emp,
+            x=value_col,
+            y=name_col,
+            orientation="h",
+            text=value_col
+        )
+        fig_bar.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # TREEMAP
+    with col2:
+        fig_tree = px.treemap(
+            df_emp,
+            path=[name_col],
+            values=value_col,
+            color="Percent",
+            color_continuous_scale="Blues"
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
+
+    # -----------------------------
+    # TABLE
+    # -----------------------------
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.dataframe(df_emp, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
