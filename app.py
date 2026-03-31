@@ -153,7 +153,7 @@ if section == "National":
     fig.add_scattergeo(
         lon=[-78],   # far right
         lat=[25],    # bottom
-        text=[f"Out of US<br>{int(out_us_total):,}<br>],
+        text=[f"Out of US<br>{int(out_us_total):,}<br>"],
         mode='markers+text',
         marker=dict(
             size=max(50, out_us_total**0.5),
