@@ -45,7 +45,6 @@ st.markdown("""
 st.markdown("""
 <div class="header">
 <h2>GRAND VALLEY STATE UNIVERSITY</h2>
-<p>Alumni Location by State</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -98,7 +97,18 @@ section = st.sidebar.radio(
 
 if section == "National":
 
-    st.markdown('<div class="section-title">Source: GVSU Institutional Analysis"</div>', unsafe_allow_html=True)
+    # -------------------------
+    # TITLE + SOURCE
+    # -------------------------
+    st.markdown(
+        "<h3 style='text-align:center;color:white; font-size:30'>Alumni Location by State</h3>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GVSU Institutional Analysis</p>",
+        unsafe_allow_html=True
+    )
 
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
@@ -284,6 +294,18 @@ if section == "Michigan":
 # STATE TABLE
 # =====================================================
 if section == "State Table":
+    # -------------------------
+    # TITLE + SOURCE
+    # -------------------------
+    st.markdown(
+        "<h3 style='text-align:center;color:white; font-size:30'>Alumni Location by State</h3>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GVSU Institutional Analysis</p>",
+        unsafe_allow_html=True
+    )
 
     majors = ['All'] + sorted(df['Major'].dropna().unique())
     selected_major = st.selectbox("Major", majors)
@@ -306,6 +328,19 @@ if section == "State Table":
 # COUNTY TABLE
 # =====================================================
 if section == "County Table":
+
+    # -------------------------
+    # TITLE + SOURCE
+    # -------------------------
+    st.markdown(
+        "<h3 style='text-align:center;color:white; font-size:30'>Alumni Location by County</h3>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GVSU Institutional Analysis</p>",
+        unsafe_allow_html=True
+    )
 
     states = sorted(df['stfip'].map(fips_to_state).dropna().unique())
     selected_state = st.selectbox("State", states)
@@ -343,8 +378,20 @@ if section == "County Table":
 # INDUSTRY ANALYSIS (FINAL)
 # =====================================================
 if section == "Industry Analysis":
+    # -------------------------
+    # TITLE + SOURCE
+    # -------------------------
+    st.markdown(
+        "<h3 style='text-align:center;color:white; font-size:30'>Industry Analysis</h3>",
+        unsafe_allow_html=True
+    )
 
-    st.markdown('<div class="section-title">Industry Analysis</div>', unsafe_allow_html=True)
+    st.markdown(
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GreyDI</p>",
+        unsafe_allow_html=True
+    )
+
+    
 
     FILE_PATH = "graydi_fips_mapv.xlsx"
 
@@ -399,8 +446,20 @@ if section == "Industry Analysis":
 # EMPLOYER ANALYSIS (FINAL)
 # =====================================================
 if section == "Employer Analysis":
+    # -------------------------
+    # TITLE + SOURCE
+    # -------------------------
+    st.markdown(
+        "<h3 style='text-align:center;color:white; font-size:30'>Employer Analysis</h3>",
+        unsafe_allow_html=True
+    )
 
-    st.markdown('<div class="section-title">Employer Analysis</div>', unsafe_allow_html=True)
+    st.markdown(
+        "<p style='text-align:center;color:white;font-size:18px;'>Source: GrayDI</p>",
+        unsafe_allow_html=True
+    )
+
+    
 
     FILE_PATH = "graydi_fips_mapv.xlsx"
     xls = pd.ExcelFile(FILE_PATH)
