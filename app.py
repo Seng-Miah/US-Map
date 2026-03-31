@@ -115,29 +115,66 @@ if section == "National":
 
     us_states = state_df[state_df['stfip'] != "00"].copy()
 
-    # =====================================================
-    # USE RAW VALUES (NO LOG)
-    # =====================================================
-    us_states['value'] = us_states['Graduated']
-    
-    # 🔥 CLIP EXTREMES (KEY STEP)
-    lower = us_states['value'].quantile(0.02)
-    upper = us_states['value'].quantile(0.70)  
-    
-    us_states['value_clipped'] = us_states['value'].clip(lower, upper)
-    
-    # =====================================================
+    # -------------------------
+    # BIN FUNCTION (FINAL)
+    # -------------------------
+    def assign_bin(x):
+        if x >= 5000: return "5000–136816"
+        elif x >= 1000: return "1000–5000"
+        elif x >= 567: return "567–1000"
+        elif x >= 323: return "323–567"
+        elif x >= 203: return "203–323"
+        elif x >= 118: return "118–203"
+        elif x >= 84: return "84–118"
+        elif x >= 60: return "60–84"
+        elif x >= 33: return "33–60"
+        else: return "6–33"
+
+    us_states['bin'] = us_states['Graduated'].apply(assign_bin)
+
+    # -------------------------
+    # ORDER (CRITICAL)
+    # -------------------------
+    bin_order = [
+        "5000–136816",
+        "1000–5000",
+        "567–1000",
+        "323–567",
+        "203–323",
+        "118–203",
+        "84–118",
+        "60–84",
+        "33–60",
+        "6–33"
+    ]
+
+    # -------------------------
+    # COLORS (DARK → LIGHT)
+    # -------------------------
+    colors = [
+        "#08306B",  # very dark
+        "#08519C",
+        "#2171B5",
+        "#4292C6",
+        "#6BAED6",
+        "#9ECAE1",
+        "#C6DBEF",
+        "#DEEBF7",
+        "#F7FBFF",
+        "#FFFFFF"   # lightest
+    ]
+
+    # -------------------------
     # MAP
-    # =====================================================
+    # -------------------------
     fig = px.choropleth(
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='value_clipped',   # ✅ use clipped RAW values
+        color='bin',
         scope='usa',
-        color_continuous_scale='Blues',
-        range_color=(lower, upper)   # 🔥 CRITICAL
-    )
+        category_orders={"bin": bin_order},
+        color_discrete_sequence=colors
 
     fig.update_traces(
         customdata=us_states[['State Name','Graduated']],
