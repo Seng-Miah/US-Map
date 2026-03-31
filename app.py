@@ -138,14 +138,11 @@ if section == "National":
     out_us_total = out_us_df['Graduated'].sum()
     out_us_count = len(out_us_df)
     
-    # DEBUG (remove later)
-    st.write("Out-of-US total:", out_us_total)
-    st.write("Out-of-US obs:", out_us_count)
     
     # 🔥 FORCE VISIBLE POSITION
     fig.add_scattergeo(
-        lon=[-60],   # far right
-        lat=[20],    # bottom
+        lon=[-95],   # far right
+        lat=[25],    # bottom
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
         marker=dict(
