@@ -97,109 +97,84 @@ section = st.sidebar.radio(
     ["National","Michigan","State Table","County Table", "Industry Analysis", "Employer Analysis"]
 )
 
-# =====================================================
-# NATIONAL DISTRIBUTION (FINAL WORKING)
+ =====================================================
+# NATIONAL SECTION
 # =====================================================
 if section == "National Distribution":
 
     st.markdown('<div class="section-title">National Distribution</div>', unsafe_allow_html=True)
 
-    # -------------------------
-    # AGGREGATE
-    # -------------------------
     state_df = df.groupby(['state','stfip'], as_index=False)['Graduated'].sum()
     state_df['State Name'] = state_df['stfip'].map(fips_to_state)
 
-    # Remove Out-of-US from map
-    us_states = state_df[state_df['stfip'] != "00"].copy()
+    # US states only
+    us_states = state_df[
+        (state_df['stfip'] != "00") &
+        (~state_df['stfip'].isin(['60','66','69','72','78']))
+    ]
 
-    # 🔥 LOG SCALE
-    us_states['log'] = np.log1p(us_states['Graduated'])
+    # Out of US
+    out_us = state_df[state_df['stfip'] == "00"]
 
     # =====================================================
-    # SINGLE MAP (CRITICAL FIX)
+    # MAP (FIXED)
     # =====================================================
+    import numpy as np
+
+    us_states['log_grad'] = np.log1p(us_states['Graduated'])
+    
     fig = px.choropleth(
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='log',
-        color_continuous_scale='Blues',
-        scope='usa'
+        color='log_grad',   # 👈 use log values
+        scope='usa',
+        color_continuous_scale='Blues'
     )
-
-    # -------------------------
-    # HOVER
-    # -------------------------
+    
     fig.update_traces(
         customdata=us_states[['State Name','Graduated']],
         hovertemplate="<b>%{customdata[0]}</b><br>Graduated: %{customdata[1]:,}<extra></extra>"
     )
 
-    # =====================================================
-    # 🔥 CORRECT OUT-OF-US (RAW DATA)
-    # =====================================================
-    out_us_total = df[df['stfip']=="00"]['Graduated'].sum()
+    if not out_us.empty:
 
-    if out_us_total > 0:
+        value = int(out_us['Graduated'].values[0])
+    
         fig.add_scattergeo(
-            lon=[-66],
-            lat=[22],
-            text=[f"Out of US<br>{int(out_us_total):,}"],
+            lon=[-65],   # 👉 slightly more right
+            lat=[27],    # 👉 slightly higher (better alignment)
+            text=[f"Out of US<br>{value:,}"],
             mode='markers+text',
             marker=dict(
-                size=max(25, out_us_total**0.5 * 1.6),
+                size=max(20, value**0.5 * 1.5),
                 color='red',
-                opacity=0.9
+                opacity=0.85
             ),
             textposition="top center",
             showlegend=False
         )
 
-    # -------------------------
-    # LAYOUT
-    # -------------------------
     fig.update_layout(
-        height=850,
-        dragmode=False,
-        margin=dict(l=0, r=0, t=10, b=0)
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        height=650,
+        margin=dict(l=0, r=0, t=30, b=0)
     )
 
-    fig.update_geos(
-        fitbounds="locations",
-        visible=False,
-        projection_scale=1.1
-    )
-
-    # -------------------------
-    # DISPLAY
-    # -------------------------
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="box">', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # =====================================================
-    # STATE TABLE
-    # =====================================================
+    # TABLE
     st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
 
     table = state_df.copy()
-
-    table = table.rename(columns={
-        'stfip': 'StateFip',
-        'State Name': 'State'
-    })
-
-    table = table[['StateFip','State','Graduated']]
-
     total = table['Graduated'].sum()
-    table['Share of Total'] = (table['Graduated']/total*100).round(2)
+    table['Share'] = (table['Graduated']/total*100).round(2)
 
-    table = table.sort_values('Graduated', ascending=False)
-    table['Graduated'] = table['Graduated'].astype(int)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.dataframe(table, use_container_width=True, height=450)
+    st.markdown('<div class="table-box">', unsafe_allow_html=True)
+    st.dataframe(table.sort_values('Graduated', ascending=False), use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
@@ -302,9 +277,9 @@ if section == "Industry Analysis":
     # Remove totals
     df_ind = df_ind[~df_ind["Industries"].str.contains("Total", case=False, na=False)]
 
-    # Top N input (no slider)
-    TOP_N = st.number_input(
-        "Top N Industries",
+    # Top  input (no slider)
+    TOP = st.number_input(
+        "Top Industries",
         min_value=1,
         max_value=50,
         value=10,
