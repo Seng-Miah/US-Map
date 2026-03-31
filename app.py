@@ -120,6 +120,7 @@ if section == "National":
         color='log_norm',
         scope='usa',
         color_continuous_scale='Blues'
+        range_color=(us_states['log'].min(), us_states['log'].max())  
     )
 
     fig.update_traces(
@@ -128,15 +129,28 @@ if section == "National":
     )
 
     # 🔥 OUT-OF-US (FIXED)
-    out_us_total = df[df['stfip'] == "00"]['Graduated'].sum()
-    out_us_count = df[df['stfip'] == "00"].shape[0]
-
+    
+    out_us_df = df[df['stfip'] == "00"]
+    
+    out_us_total = out_us_df['Graduated'].sum()
+    out_us_count = len(out_us_df)
+    
+    # DEBUG (remove later)
+    st.write("DEBUG Out-of-US total:", out_us_total)
+    st.write("DEBUG Out-of-US count:", out_us_count)
+    
+    # 🔥 ALWAYS SHOW (no condition)
     fig.add_scattergeo(
-        lon=[-65],
-        lat=[25],
+        lon=[-67],   # push right
+        lat=[23],    # push down
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
-        marker=dict(size=max(30, out_us_total**0.4), color='red'),
+        marker=dict(
+            size=max(35, out_us_total**0.4),
+            color='red',
+            opacity=0.95
+        ),
+        textposition="top center",
         showlegend=False
     )
 
