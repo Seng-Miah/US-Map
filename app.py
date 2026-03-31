@@ -142,7 +142,7 @@ if section == "National Distribution":
 
     # Split data
     us_states = state_df[state_df['stfip'] != "00"]
-    out_us = state_df[state_df['stfip'] == "00"]
+    out_us_total = df[df['stfip'] == "00"]['Graduated'].sum()
 
     # Log transform
     us_states['log'] = np.log1p(us_states['Graduated'])
@@ -172,23 +172,21 @@ if section == "National Distribution":
     # -------------------------
     # OUT-OF-US BUBBLE
     # -------------------------
-    if not out_us.empty:
-        val = int(out_us['Graduated'].values[0])
+    if out_us_total > 0:
 
-        fig_main.add_scattergeo(
-            lon=[-66],
-            lat=[22],   # bottom-right
-            text=[f"Out of US<br>{val:,}"],
-            mode='markers+text',
-            marker=dict(
-                size=max(25, val**0.5 * 1.6),
-                color='red',
-                opacity=0.9
-            ),
-            textposition="top center",
-            showlegend=False
-        )
-
+    fig_main.add_scattergeo(
+        lon=[-66],
+        lat=[22],
+        text=[f"Out of US<br>{int(out_us_total):,}"],
+        mode='markers+text',
+        marker=dict(
+            size=max(25, out_us_total**0.5 * 1.6),
+            color='red',
+            opacity=0.9
+        ),
+        textposition="top center",
+        showlegend=False
+    )
     # -------------------------
     # LAYOUT (STATIC + LARGE)
     # -------------------------
@@ -347,15 +345,7 @@ if section == "Michigan Distribution":
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.plotly_chart(fig,use_container_width=True,config={"staticPlot":True})
-
-    with col2:
-        st.markdown('<div class="table-box">', unsafe_allow_html=True)
-        st.dataframe(table.sort_values('Graduated',ascending=False),use_container_width=True,height=500)
-        st.markdown('</div>', unsafe_allow_html=True)
-
+    
 # =====================================================
 # =====================================================
 # STATE TABLE (FINAL FIXED VERSION)
