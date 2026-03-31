@@ -328,19 +328,6 @@ if section == "Industry Analysis":
 
         st.plotly_chart(fig_tree, use_container_width=True)
 
-    # =====================================================
-    # HISTOGRAM (NEW)
-    # =====================================================
-    st.markdown('<div class="section-title">Distribution of Industry Counts</div>', unsafe_allow_html=True)
-
-    fig_hist = px.histogram(
-        df_ind,
-        x="Count of Company Industry",
-        nbins=10
-    )
-
-    st.plotly_chart(fig_hist, use_container_width=True)
-
 # =====================================================
 # EMPLOYER ANALYSIS (FINAL)
 # =====================================================
@@ -411,15 +398,4 @@ if section == "Employer Analysis":
 
         st.plotly_chart(fig_tree, use_container_width=True)
 
-    # =====================================================
-    # HISTOGRAM (NEW)
-    # =====================================================
-    st.markdown('<div class="section-title">Distribution of Employer Counts</div>', unsafe_allow_html=True)
-
-    fig_hist = px.histogram(
-        df_emp,
-        x=value_col,
-        nbins=10
-    )
-
-    st.plotly_chart(fig_hist, use_container_width=True)
+    
