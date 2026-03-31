@@ -106,12 +106,14 @@ if section == "National":
     us_states = state_df[state_df['stfip'] != "00"].copy()
 
     # 🔥 LOG + NORMALIZATION
+    # 🔥 LOG TRANSFORM
     us_states['log'] = np.log1p(us_states['Graduated'])
-
-    us_states['log'] = (
-        (us_states['log'] - us_states['log'].min()) /
-        (us_states['log'].max() - us_states['log'].min())
-    )
+    
+    # 🔥 CLIP EXTREMES (KEY FIX)
+    lower = us_states['log'].quantile(0.05)
+    upper = us_states['log'].quantile(0.95)
+    
+    us_states['log_clipped'] = us_states['log'].clip(lower, upper)
 
     fig = px.choropleth(
         us_states,
@@ -127,22 +129,27 @@ if section == "National":
         hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
     )
 
-    # 🔥 OUT-OF-US (FIXED)
-    
-    out_us_df = df[df['stfip'] == "00"]
+    # 🔥 FORCE CAPTURE MISSING + 00
+    out_us_df = df[
+        (df['stfip'] == "00") |
+        (df['stfip'].isna())
+    ]
     
     out_us_total = out_us_df['Graduated'].sum()
     out_us_count = len(out_us_df)
     
+    # DEBUG (remove later)
+    st.write("Out-of-US total:", out_us_total)
+    st.write("Out-of-US obs:", out_us_count)
     
-    # 🔥 ALWAYS SHOW (no condition)
+    # 🔥 FORCE VISIBLE POSITION
     fig.add_scattergeo(
-        lon=[-67],   # push right
-        lat=[23],    # push down
+        lon=[-60],   # far right
+        lat=[20],    # bottom
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
         marker=dict(
-            size=max(35, out_us_total**0.4),
+            size=max(40, out_us_total**0.4),
             color='red',
             opacity=0.95
         ),
