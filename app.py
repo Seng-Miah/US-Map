@@ -115,128 +115,65 @@ if section == "National":
 
     us_states = state_df[state_df['stfip'] != "00"].copy()
 
-    # -------------------------
-    # ENSURE NUMERIC
-    # -------------------------
-    us_states['Graduated'] = pd.to_numeric(us_states['Graduated'], errors='coerce')
+    # 🔥 LOG + NORMALIZATION
+    # 🔥 LOG TRANSFORM
+    us_states['log'] = np.log1p(us_states['Graduated'])
+    
+    # 🔥 CLIP EXTREMES (KEY FIX)
+    lower = us_states['log'].quantile(0.05)
+    upper = us_states['log'].quantile(0.95)
+    
+    us_states['log_clipped'] = us_states['log'].clip(lower, upper)
 
-    # -------------------------
-    # BIN FUNCTION (FINAL)
-    # -------------------------
-    def assign_bin(x):
-        if x >= 5000: return "5000–136816"
-        elif x >= 1000: return "1000–5000"
-        elif x >= 567: return "567–1000"
-        elif x >= 323: return "323–567"
-        elif x >= 203: return "203–323"
-        elif x >= 118: return "118–203"
-        elif x >= 84: return "84–118"
-        elif x >= 60: return "60–84"
-        elif x >= 33: return "33–60"
-        else: return "6–33"
-
-    us_states['bin'] = us_states['Graduated'].apply(assign_bin)
-
-    # -------------------------
-    # ORDER (CRITICAL)
-    # -------------------------
-    bin_order = [
-        "5000–136816",
-        "1000–5000",
-        "567–1000",
-        "323–567",
-        "203–323",
-        "118–203",
-        "84–118",
-        "60–84",
-        "33–60",
-        "6–33"
-    ]
-
-    # -------------------------
-    # COLORS (DARK → LIGHT)
-    # -------------------------
-    colors = [
-        "#08306B",  # very dark
-        "#08519C",
-        "#2171B5",
-        "#4292C6",
-        "#6BAED6",
-        "#9ECAE1",
-        "#C6DBEF",
-        "#DEEBF7",
-        "#F7FBFF",
-        "#FFFFFF"   # lightest
-    ]
-
-    # -------------------------
-    # MAP
-    # -------------------------
     fig = px.choropleth(
         us_states,
         locations='state',
         locationmode='USA-states',
-        color='bin',
+        color='log',
         scope='usa',
-        category_orders={"bin": bin_order},
-        color_discrete_sequence=colors
+        color_continuous_scale='Blues'  
     )
 
-    # -------------------------
-    # HOVER (CLEAN)
-    # -------------------------
     fig.update_traces(
         customdata=us_states[['State Name','Graduated']],
         hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,}<extra></extra>"
     )
 
-    # -------------------------
-    # OUT-OF-US BUBBLE (FLORIDA AREA)
-    # -------------------------
-    out_us_df = df[(df['stfip'] == "00") | (df['stfip'].isna())]
-
+    # 🔥 FORCE CAPTURE MISSING + 00
+    out_us_df = df[
+        (df['stfip'] == "00") |
+        (df['stfip'].isna())
+    ]
+    
     out_us_total = out_us_df['Graduated'].sum()
     out_us_count = len(out_us_df)
-
+    
+    
+    # 🔥 FORCE VISIBLE POSITION
     fig.add_scattergeo(
-        lon=[-78],   # near Florida
-        lat=[24],
+        lon=[-78],   # far right
+        lat=[25],    # bottom
         text=[f"Out of US<br>{int(out_us_total):,}<br>Obs: {out_us_count}"],
         mode='markers+text',
-        marker=dict(size=50, color='red'),
+        marker=dict(
+            size=max(50, out_us_total**0.5),
+            color='grey',
+            opacity=0.95
+        ),
         textposition="top center",
         showlegend=False
     )
 
-    # -------------------------
-    # LAYOUT
-    # -------------------------
-    fig.update_layout(
-        height=750,
-        dragmode=False,
-        margin=dict(l=0, r=0, t=20, b=0),
-        legend_title_text="Graduates (Binned)"
-    )
-
+    fig.update_layout(height=750, dragmode=False)
     fig.update_geos(scope="usa", visible=False)
 
-    # -------------------------
-    # DISPLAY
-    # -------------------------
     st.plotly_chart(fig, use_container_width=True)
 
-    # =====================================================
-    # TABLE
-    # =====================================================
+    # 🔥 TABLE
     st.markdown('<div class="section-title">State Table</div>', unsafe_allow_html=True)
 
     table = state_df.copy()
-
-    table = table.rename(columns={
-        'stfip': 'StateFip',
-        'State Name': 'State'
-    })
-
+    table = table.rename(columns={'stfip':'StateFip','State Name':'State'})
     table = table[['StateFip','State','Graduated']]
 
     total = table['Graduated'].sum()
